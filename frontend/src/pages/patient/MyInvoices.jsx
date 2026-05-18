@@ -3,12 +3,14 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import jsPDF from 'jspdf'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 function MyInvoices() {
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,41 +37,138 @@ function MyInvoices() {
   }
 
   const generatePDF = async (f) => {
-    const img = new Image(); img.src = '/HZPdf.jpg'
-    await new Promise(r => { img.onload = r; img.onerror = r })
-    const doc = new jsPDF()
-    if (img.complete && img.naturalWidth) doc.addImage(img, 'JPEG', 15, 5, 80, 33)
-    doc.setFontSize(12)
-    doc.setTextColor(50)
-    doc.text(`Facture N°: ${f.numero_facture}`, 20, 48)
-    doc.text(`Date: ${formatDate(f.date_facture)}`, 20, 56)
-    doc.text(`Patient: ${f.patient ? `${f.patient.prenom} ${f.patient.nom}` : '—'}`, 20, 64)
+    const loadImage = (src) => {
+      const img = new Image()
+      img.src = src
+      return new Promise(r => { img.onload = () => r(img); img.onerror = () => r(null) })
+    }
+
+    const [logoCircle, logoWater] = await Promise.all([
+      loadImage('/HZLogo-Border.png'),
+      loadImage('/HZLogo.png'),
+    ])
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const W = 210
+
+    // ── Header: circle logo ──
+    if (logoCircle) doc.addImage(logoCircle, 'PNG', 12, 8, 28, 28)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(26)
+    doc.setTextColor(15, 72, 66)
+    doc.text('HZ Dentaire', 46, 22)
+
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(13)
+    doc.setTextColor(80, 105, 100)
+    doc.text('Cabinet Dentaire', 46, 31)
+
+    doc.setDrawColor(15, 72, 66)
+    doc.setLineWidth(0.6)
+    doc.line(12, 41, W - 12, 41)
+
+    // ── Watermark ──
+    if (logoWater) {
+      try {
+        doc.saveGraphicsState()
+        doc.setGState(new doc.GState({ opacity: 0.07 }))
+        doc.addImage(logoWater, 'PNG', 55, 105, 100, 100)
+        doc.restoreGraphicsState()
+      } catch (_) {}
+    }
+
+    // ── Fields ──
+    const LX = 15
+    const VX = 58
+    let y = 56
+
+    const field = (label, value) => {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.setTextColor(15, 72, 66)
+      doc.text(`${label}:`, LX, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(25, 25, 25)
+      doc.text(String(value || '—'), VX, y)
+      y += 14
+    }
+
     const dentiste = f.visite?.dentiste
     const dentisteName = dentiste ? `${dentiste.prenom || ''} ${dentiste.nom || ''}`.trim() : '—'
-    doc.text(`Dentiste: Dr. ${dentisteName}`, 20, 72)
-    let y = 88
+    const patientName = f.patient ? `${f.patient.prenom} ${f.patient.nom}` : '—'
+
+    field('Facture N°',   f.numero_facture)
+    field('Patient',      patientName)
+    field('Dentiste',     `Dr. ${dentisteName}`)
+    field('Date',         formatDate(f.date_facture))
+
+    // ── Détail section header ──
+    y += 4
+    doc.setFont('helvetica', 'bold')
     doc.setFontSize(13)
-    doc.text('Détail:', 20, y)
-    y += 10
-    doc.setFontSize(11)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Détail:', LX, y)
+    y += 11
+
+    // ── Line items ──
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(12)
+    doc.setTextColor(25, 25, 25)
+
     const fraisBase = parseFloat(f.frais_visite_base || 0)
     if (fraisBase > 0) {
-      doc.text('Frais de visite de base', 25, y)
-      doc.text(`${fraisBase.toFixed(2)} MAD`, 160, y)
-      y += 10
+      doc.text('Frais de visite de base', LX + 4, y)
+      doc.text(`${fraisBase.toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+      y += 9
     }
+
     const operations = f.visite?.operations || []
     operations.forEach(op => {
-      doc.text(`• ${op.nom_operation || op.nom || '—'}`, 25, y)
-      doc.text(`${parseFloat(op.cout).toFixed(2)} MAD`, 160, y)
-      y += 10
+      doc.text(`•  ${op.nom_operation || op.nom || '—'}`, LX + 4, y)
+      doc.text(`${parseFloat(op.cout || 0).toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+      y += 9
     })
-    y += 5
-    doc.line(20, y, 190, y)
-    y += 8
+
+    // ── Total ──
+    y += 4
+    doc.setDrawColor(15, 72, 66)
+    doc.setLineWidth(0.4)
+    doc.line(LX, y, W - 14, y)
+    y += 9
+
+    doc.setFont('helvetica', 'bold')
     doc.setFontSize(13)
-    doc.text('Total:', 130, y)
-    doc.text(`${parseFloat(f.montant_total).toFixed(2)} MAD`, 160, y)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Total:', LX, y)
+    doc.setTextColor(25, 25, 25)
+    doc.text(`${parseFloat(f.montant_total || 0).toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+
+    // ── Statut badge ──
+    y += 10
+    const statut = f.statut === 'payee' ? 'PAYÉE' : 'EN ATTENTE'
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(f.statut === 'payee' ? 15 : 150, f.statut === 'payee' ? 72 : 100, f.statut === 'payee' ? 66 : 30)
+    doc.text(`Statut: ${statut}`, LX, y)
+
+    // ── Signature ──
+    const sigX1 = W - 78
+    const sigX2 = W - 14
+    const sigY  = 265
+    doc.setDrawColor(40, 40, 40)
+    doc.setLineWidth(0.3)
+    doc.line(sigX1, sigY, sigX2, sigY)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Signature', (sigX1 + sigX2) / 2, sigY + 7, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(12)
+    doc.setTextColor(40, 40, 40)
+    doc.text('Hz', (sigX1 + sigX2) / 2, sigY + 13, { align: 'center' })
+
     doc.save(`${f.numero_facture}.pdf`)
   }
 
@@ -79,9 +178,10 @@ function MyInvoices() {
 
   const InvoiceRow = ({ f }) => (
     <div
-      style={styles.invoiceRow}
+      style={{ ...styles.invoiceRow, flexWrap: isMobile ? 'wrap' : 'nowrap' }}
       onClick={() => setSelectedInvoice(f)}
     >
+      {/* Icon */}
       <div style={{
         ...styles.invoiceIcon,
         background: f.statut === 'en_attente' ? 'var(--amber-soft)' : 'var(--accent-soft)',
@@ -92,32 +192,41 @@ function MyInvoices() {
           <path d="M9 8h6M9 12h6M9 16h4"/>
         </svg>
       </div>
-      <div style={{ flex: 1 }}>
+
+      {/* Title + meta */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         <b style={styles.invoiceTitle}>Facture {f.numero_facture}</b>
-        <small style={styles.invoiceMeta}>
+        <small style={{ ...styles.invoiceMeta, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {f.statut === 'payee'
-            ? `Payée le ${formatDate(f.date_facture)} · visite du ${formatDate(f.date_facture)}`
+            ? `Payée le ${formatDate(f.date_facture)}`
             : `Visite du ${formatDate(f.date_facture)}`}
         </small>
       </div>
-      <div style={{ fontFamily: '"Geist Mono", monospace', fontSize: '15px', fontWeight: '500', marginRight: '16px', color: 'var(--ink)' }}>
-        {f.montant_total} MAD
-      </div>
-      <span style={{
-        ...styles.chip,
-        ...(f.statut === 'en_attente'
-          ? { background: 'var(--amber-soft)', color: '#8d6a2b' }
-          : { background: 'var(--success-soft)', color: 'var(--success)' })
+
+      {/* Amount + chip + PDF — second row on mobile */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '10px',
+        ...(isMobile ? { width: '100%', paddingLeft: '58px', paddingTop: '4px' } : {}),
       }}>
-        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: f.statut === 'en_attente' ? 'var(--gold)' : 'var(--success)', display: 'inline-block' }}/>
-        {f.statut === 'en_attente' ? 'À régler' : 'Payée'}
-      </span>
-      <button
-        style={styles.btnPDF}
-        onClick={e => { e.stopPropagation(); generatePDF(f) }}
-      >
-        ↓ PDF
-      </button>
+        <div style={{ fontFamily: '"Geist Mono", monospace', fontSize: '14px', fontWeight: '500', color: 'var(--ink)', flexShrink: 0 }}>
+          {f.montant_total} MAD
+        </div>
+        <span style={{
+          ...styles.chip,
+          ...(f.statut === 'en_attente'
+            ? { background: 'var(--amber-soft)', color: '#8d6a2b' }
+            : { background: 'var(--success-soft)', color: 'var(--success)' })
+        }}>
+          <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: f.statut === 'en_attente' ? 'var(--gold)' : 'var(--success)', display: 'inline-block' }}/>
+          {f.statut === 'en_attente' ? 'À régler' : 'Payée'}
+        </span>
+        <button
+          style={{ ...styles.btnPDF, marginLeft: 'auto' }}
+          onClick={e => { e.stopPropagation(); generatePDF(f) }}
+        >
+          ↓ PDF
+        </button>
+      </div>
     </div>
   )
 
@@ -126,9 +235,9 @@ function MyInvoices() {
       <div>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0', marginBottom: '28px' }}>
           <div>
-            <h1 style={styles.pageTitle}>
+            <h1 style={{ ...styles.pageTitle, fontSize: isMobile ? '28px' : '36px' }}>
               Mes <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>factures</em>
             </h1>
             <p style={styles.pageSub}>
@@ -136,9 +245,9 @@ function MyInvoices() {
             </p>
           </div>
           {totalARegler > 0 && (
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
               <div style={{ fontSize: '10.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: '4px' }}>Total à régler</div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontSize: '32px', fontWeight: '400', color: 'var(--gold)', letterSpacing: '-0.02em' }}>
+              <div style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '24px' : '32px', fontWeight: '400', color: 'var(--gold)', letterSpacing: '-0.02em' }}>
                 {totalARegler} <span style={{ fontSize: '14px' }}>MAD</span>
               </div>
             </div>
@@ -198,7 +307,7 @@ function MyInvoices() {
         {selectedInvoice && (
           <>
             {/* Drawer header */}
-            <div style={{ padding: '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
+            <div style={{ padding: isMobile ? '16px' : '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
               <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
                 Facture {selectedInvoice.numero_facture}
               </h2>
@@ -211,7 +320,7 @@ function MyInvoices() {
             </div>
 
             {/* Drawer body */}
-            <div style={{ padding: '24px 28px', overflow: 'auto', flex: 1 }}>
+            <div style={{ padding: isMobile ? '16px' : '24px 28px', overflow: 'auto', flex: 1 }}>
 
               {/* Chip statut */}
               <div style={{ marginBottom: '20px' }}>
@@ -233,7 +342,7 @@ function MyInvoices() {
                 { label: 'DATE DE VISITE', value: formatDate(selectedInvoice.date_facture) },
                 { label: 'RÉFÉRENCE', value: selectedInvoice.numero_facture },
               ].map(row => (
-                <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '16px', padding: '10px 0', borderBottom: '1px dashed var(--line)' }}>
+                <div key={row.label} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '140px 1fr', gap: isMobile ? '2px' : '16px', padding: '10px 0', borderBottom: '1px dashed var(--line)' }}>
                   <label style={{ fontSize: '11.5px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>{row.label}</label>
                   <span style={{ fontSize: '13.5px', color: 'var(--ink)' }}>{row.value}</span>
                 </div>
@@ -277,7 +386,7 @@ function MyInvoices() {
             </div>
 
             {/* Drawer footer */}
-            <div style={{ padding: '16px 28px', borderTop: '1px solid var(--line)', display: 'flex', gap: '10px', background: 'var(--surface)' }}>
+            <div style={{ padding: isMobile ? '12px 16px' : '16px 28px', borderTop: '1px solid var(--line)', display: 'flex', gap: '10px', background: 'var(--surface)' }}>
               <button
                 style={{ ...styles.btnPrimary, flex: 1 }}
                 onClick={() => generatePDF(selectedInvoice)}
