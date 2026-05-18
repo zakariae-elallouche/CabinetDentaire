@@ -19,7 +19,7 @@ class RendezVousController extends Controller
 
         // Auto-cancel past RDVs
         RendezVous::where('statut', 'confirme')
-            ->where('date_heure', '<', Carbon::now())
+            ->where('date_heure', '<', Carbon::now()->subHours(2))
             ->update(['statut' => 'annule', 'notes' => 'Patient absent au rendez-vous']);
 
         RendezVous::where('statut', 'en_attente')
