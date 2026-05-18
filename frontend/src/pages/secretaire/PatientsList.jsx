@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const MONTHS_FR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc']
 const fmtDate = (str) => {
@@ -20,6 +21,7 @@ const initials = (p) => `${p?.prenom?.[0] || ''}${p?.nom?.[0] || ''}`.toUpperCas
 // ─────────────────────────────────────────────
 function PatientsListView() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -71,7 +73,7 @@ function PatientsListView() {
         ) : filtered.length === 0 ? (
           <EmptyState title="Aucun patient trouvé" sub="Essayez un autre terme de recherche." />
         ) : (
-          <div style={s.grid}>
+          <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {filtered.map(p => (
               <div key={p.id} style={s.patientCard} onClick={() => navigate(`/secretaire/patient/${p.id}`)}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -123,6 +125,7 @@ function PatientsListView() {
 function PatientDetailView() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [patient, setPatient] = useState(null)
   const [rdvs, setRdvs] = useState([])
@@ -183,7 +186,7 @@ function PatientDetailView() {
           </h1>
         </div>
 
-        <div style={s.detailGrid}>
+        <div style={{ ...s.detailGrid, gridTemplateColumns: isMobile ? '1fr' : '280px 1fr' }}>
 
           {/* ── Left: profile ── */}
           <div>
@@ -381,7 +384,7 @@ const chipStyle = (statut) => {
   const map = {
     'EN_ATTENTE': { background: 'var(--amber-soft)', color: '#8d6a2b' },
     'CONFIRMÉ':   { background: 'var(--accent-soft)', color: 'var(--accent)' },
-    'COMPLÉTÉ':   { background: 'var(--success-soft)', color: 'var(--success)' },
+    'COMPLÉTÉ':   { background: 'var(--info-soft)',    color: 'var(--info)' },
     'ANNULÉ':     { background: 'var(--rose-soft)', color: 'var(--rose)' },
   }
   return map[statut] || { background: 'var(--surface)', color: 'var(--ink-3)' }

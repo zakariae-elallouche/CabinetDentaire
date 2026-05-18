@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
-import jsPDF from 'jspdf'
+import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
 
 const MONTHS_LONG = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
@@ -18,13 +18,15 @@ function MyPrescriptions() {
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState(false)
   const [selected, setSelected]           = useState(null)
+  const [patientName, setPatientName]     = useState('—')
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const meRes = await api.get('/me')
-        const patientId = meRes.data.profile.id
-        const res = await api.get(`/patient/${patientId}/ordonnances`)
+        const { id, prenom, nom } = meRes.data.profile
+        setPatientName(`${prenom || ''} ${nom || ''}`.trim() || '—')
+        const res = await api.get(`/patient/${id}/ordonnances`)
         setPrescriptions(res.data)
       } catch {
         setError(true)
@@ -35,37 +37,7 @@ function MyPrescriptions() {
     fetchData()
   }, [])
 
-  const generatePDF = (p) => {
-    const doc = new jsPDF()
-    doc.setFontSize(20)
-    doc.setTextColor(15, 72, 66)
-    doc.text('HZ Dentaire', 20, 20)
-    doc.setFontSize(14)
-    doc.setTextColor(50)
-    doc.text(`Ordonnance RX-${String(p.id).padStart(4, '0')}`, 20, 35)
-    doc.setFontSize(12)
-    doc.text(`Date: ${fmtDate(p.date_delivrance)}`, 20, 45)
-    if (p.instructions_generales) {
-      doc.text(`Instructions: ${p.instructions_generales}`, 20, 53)
-    }
-    let y = 65
-    doc.setFontSize(13)
-    doc.text('Médicaments:', 20, y)
-    ;(p.medicaments || []).forEach(m => {
-      y += 10
-      doc.setFontSize(11)
-      const nom = m.medicament?.nom || m.nom || '—'
-      const detail = [m.frequence, m.duree_jours ? `${m.duree_jours} jours` : null].filter(Boolean).join(' · ')
-      doc.text(`• ${nom}${detail ? `  (${detail})` : ''}`, 25, y)
-      if (m.instructions_speciales) {
-        y += 7
-        doc.setTextColor(100)
-        doc.text(`  ${m.instructions_speciales}`, 28, y)
-        doc.setTextColor(50)
-      }
-    })
-    doc.save(`ordonnance-RX-${String(p.id).padStart(4, '0')}.pdf`)
-  }
+  const generatePDF = (p) => generateOrdonnancePDF(p, patientName)
 
   return (
     <Layout>
@@ -123,7 +95,7 @@ function MyPrescriptions() {
           position: 'fixed', inset: 0,
           background: '#1a201f55',
           backdropFilter: 'blur(4px)',
-          zIndex: 50,
+          zIndex: 150,
           opacity: selected ? 1 : 0,
           pointerEvents: selected ? 'auto' : 'none',
           transition: 'opacity 0.2s',
@@ -136,7 +108,7 @@ function MyPrescriptions() {
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '520px', maxWidth: '94vw',
         background: 'var(--bg)',
-        zIndex: 51,
+        zIndex: 160,
         transform: selected ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.3s cubic-bezier(.3,.7,.2,1)',
         display: 'flex', flexDirection: 'column',

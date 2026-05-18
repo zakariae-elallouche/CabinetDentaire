@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 function IssuePrescription() {
   const { visite_id } = useParams()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [medicaments, setMedicaments] = useState([])
   const [selectedMeds, setSelectedMeds] = useState([])
@@ -71,7 +73,7 @@ function IssuePrescription() {
           <p style={s.pageSub}>Prescrivez les médicaments nécessaires.</p>
         </div>
 
-        <div style={s.grid}>
+        <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : s.grid.gridTemplateColumns }}>
 
           {/* ── Left ── */}
           <div style={s.card}>
@@ -114,7 +116,7 @@ function IssuePrescription() {
                       </div>
                       <button style={s.btnRemove} onClick={() => setSelectedMeds(p => p.filter(m => m.id !== med.id))}>✕</button>
                     </div>
-                    <div style={s.medFields}>
+                    <div style={{ ...s.medFields, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
                       <div>
                         <label style={s.label}>Fréquence</label>
                         <input

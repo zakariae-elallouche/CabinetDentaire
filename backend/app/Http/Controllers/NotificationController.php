@@ -7,18 +7,18 @@ use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $notifications = Notification::where('utilisateur_id', session('user'))
+        $notifications = Notification::where('utilisateur_id', $request->user()->id)
             ->orderByDesc('created_at')
             ->get();
 
         return response()->json($notifications);
     }
 
-    public function markRead($id)
+    public function markRead(Request $request, $id)
     {
-        $notification = Notification::where('utilisateur_id', session('user'))
+        $notification = Notification::where('utilisateur_id', $request->user()->id)
             ->findOrFail($id);
 
         $notification->update([
@@ -29,9 +29,9 @@ class NotificationController extends Controller
         return response()->json($notification);
     }
 
-    public function markAllRead()
+    public function markAllRead(Request $request)
     {
-        Notification::where('utilisateur_id', session('user'))
+        Notification::where('utilisateur_id', $request->user()->id)
             ->where('lu', false)
             ->update([
                 'lu'    => true,

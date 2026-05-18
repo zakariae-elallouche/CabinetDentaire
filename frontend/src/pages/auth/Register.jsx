@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ function Register() {
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -38,6 +40,49 @@ function Register() {
     }
   }
 
+  const FormRow = ({ children }) => (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>{children}</div>
+  )
+
+  if (isMobile) return (
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '32px 20px 60px', overflowY: 'auto' }}>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+        <img src="/HZLogo.png" alt="HZ" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+        <div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>HZ Dentaire</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Cabinet Dentaire</div>
+        </div>
+      </div>
+
+      <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px' }}>Créer un compte 🦷</h2>
+      <p style={{ color: 'var(--ink-3)', fontSize: '14px', margin: '0 0 24px' }}>Remplissez vos informations personnelles</p>
+
+      {error && <div style={styles.errorBox}>❌ {error}</div>}
+
+      <form onSubmit={handleSubmit}>
+        <FormRow>
+          <div style={styles.formGroup}><label style={styles.label}>Nom</label><input style={styles.input} type="text" name="nom" placeholder="Benali" value={formData.nom} onChange={handleChange} required /></div>
+          <div style={styles.formGroup}><label style={styles.label}>Prénom</label><input style={styles.input} type="text" name="prenom" placeholder="Ahmed" value={formData.prenom} onChange={handleChange} required /></div>
+        </FormRow>
+        <div style={styles.formGroup}><label style={styles.label}>Email</label><input style={styles.input} type="email" name="email" placeholder="exemple@email.com" value={formData.email} onChange={handleChange} required /></div>
+        <div style={styles.formGroup}><label style={styles.label}>Mot de passe</label><input style={styles.input} type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required minLength={6} /></div>
+        <div style={styles.formGroup}><label style={styles.label}>Confirmer mot de passe</label><input style={styles.input} type="password" name="password_confirmation" placeholder="••••••••" value={formData.password_confirmation} onChange={handleChange} required minLength={6} /></div>
+        <div style={styles.formGroup}><label style={styles.label}>Téléphone</label><input style={styles.input} type="tel" name="telephone" placeholder="+212 6 xx-xxx-xxx" value={formData.telephone} onChange={handleChange} required /></div>
+        <FormRow>
+          <div style={styles.formGroup}><label style={styles.label}>Date de naissance</label><input style={styles.input} type="date" name="date_naissance" value={formData.date_naissance} onChange={handleChange} required /></div>
+          <div style={styles.formGroup}><label style={styles.label}>Sexe</label><select style={styles.input} name="sexe" value={formData.sexe} onChange={handleChange}><option value="masculin">Masculin</option><option value="feminin">Féminin</option></select></div>
+        </FormRow>
+        <div style={styles.formGroup}><label style={styles.label}>Adresse</label><input style={styles.input} type="text" name="adresse" placeholder="123 Rue, Ville" value={formData.adresse} onChange={handleChange} /></div>
+        <button type="submit" style={styles.btnSubmit} disabled={loading}>{loading ? 'Inscription...' : 'Créer mon compte →'}</button>
+      </form>
+
+      <p style={{ ...styles.switchText, marginTop: '20px' }}>
+        Déjà un compte ?{' '}<Link to="/login" style={styles.link}>Se connecter</Link>
+      </p>
+    </div>
+  )
+
   return (
     <div style={styles.page}>
 
@@ -45,7 +90,7 @@ function Register() {
       <div style={styles.bgOverlay} />
 
       {/* Logo top-left */}
-      <div style={styles.logoTop}>
+      <div style={styles.logoTop} className="auth-logo-top">
         <div style={styles.logoBox}>
           <span style={styles.logoHZ}>HZ</span>
         </div>
@@ -56,7 +101,7 @@ function Register() {
       </div>
 
       {/* Left slogan */}
-      <div style={styles.sloganBox}>
+      <div style={styles.sloganBox} className="login-slogan">
         <div style={styles.sloganTag}>✦ Rejoignez-nous</div>
         <h1 style={styles.slogan}>
           Créez votre<br />
@@ -82,8 +127,17 @@ function Register() {
       </div>
 
       {/* Right form panel */}
-      <div style={styles.formPanel}>
+      <div style={styles.formPanel} className="login-panel">
         <div style={styles.formInner}>
+
+          {/* Mobile logo */}
+          <div className="auth-mobile-logo" style={{ display: 'none', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+            <img src="/HZLogo.png" alt="HZ Dentaire" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+            <div>
+              <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>HZ Dentaire</div>
+              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Cabinet Dentaire</div>
+            </div>
+          </div>
 
           <div style={styles.formHeader}>
             <h2 style={styles.formTitle}>Créer un compte 🦷</h2>
@@ -94,7 +148,7 @@ function Register() {
 
           <form onSubmit={handleSubmit}>
 
-            <div style={styles.row}>
+            <div style={styles.row} className="auth-form-row">
               <div style={styles.formGroup}>
                 <label style={styles.label}>Nom</label>
                 <input
@@ -134,7 +188,7 @@ function Register() {
               />
             </div>
 
-            <div style={styles.row}>
+            <div style={styles.row} className="auth-form-row">
               <div style={styles.formGroup}>
                 <label style={styles.label}>Mot de passe</label>
                 <input
@@ -163,7 +217,7 @@ function Register() {
               </div>
             </div>
 
-            <div style={styles.row}>
+            <div style={styles.row} className="auth-form-row">
               <div style={styles.formGroup}>
                 <label style={styles.label}>Téléphone</label>
                 <input
@@ -190,7 +244,7 @@ function Register() {
               </div>
             </div>
 
-            <div style={styles.row}>
+            <div style={styles.row} className="auth-form-row">
               <div style={styles.formGroup}>
                 <label style={styles.label}>Date de naissance</label>
                 <input

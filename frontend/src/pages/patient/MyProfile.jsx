@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 function MyProfile() {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
 
   const [profile, setProfile] = useState({
     nom: '', prenom: '', telephone: '', adresse: '',
@@ -71,7 +73,7 @@ function MyProfile() {
         </div>
       )}
 
-      <div style={s.grid}>
+      <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
 
         {/* ── Left: personal info ── */}
         <div style={s.card}>
@@ -89,13 +91,13 @@ function MyProfile() {
 
           <div style={s.sectionHead}>Informations personnelles</div>
 
-          <div style={s.row}>
+          <div style={{ ...s.row, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             <Field label="Prénom" name="prenom" value={profile.prenom} onChange={handleChange} />
             <Field label="Nom" name="nom" value={profile.nom} onChange={handleChange} />
           </div>
           <Field label="Téléphone" name="telephone" value={profile.telephone} onChange={handleChange} />
           <Field label="Adresse" name="adresse" value={profile.adresse} onChange={handleChange} />
-          <div style={s.row}>
+          <div style={{ ...s.row, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             <Field label="Date de naissance" name="date_naissance" type="date" value={profile.date_naissance} onChange={handleChange} />
             <div style={{ marginBottom: '1rem' }}>
               <label style={s.label}>Sexe</label>

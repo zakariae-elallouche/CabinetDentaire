@@ -34,20 +34,20 @@ function MyInvoices() {
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`
   }
 
-  const generatePDF = (f) => {
+  const generatePDF = async (f) => {
+    const img = new Image(); img.src = '/HZPdf.jpg'
+    await new Promise(r => { img.onload = r; img.onerror = r })
     const doc = new jsPDF()
-    doc.setFontSize(20)
-    doc.setTextColor(15, 72, 66)
-    doc.text('HZ Dentaire', 20, 20)
+    if (img.complete && img.naturalWidth) doc.addImage(img, 'JPEG', 15, 5, 80, 33)
     doc.setFontSize(12)
     doc.setTextColor(50)
-    doc.text(`Facture N°: ${f.numero_facture}`, 20, 35)
-    doc.text(`Date: ${formatDate(f.date_facture)}`, 20, 43)
-    doc.text(`Patient: ${f.patient ? `${f.patient.prenom} ${f.patient.nom}` : '—'}`, 20, 51)
+    doc.text(`Facture N°: ${f.numero_facture}`, 20, 48)
+    doc.text(`Date: ${formatDate(f.date_facture)}`, 20, 56)
+    doc.text(`Patient: ${f.patient ? `${f.patient.prenom} ${f.patient.nom}` : '—'}`, 20, 64)
     const dentiste = f.visite?.dentiste
     const dentisteName = dentiste ? `${dentiste.prenom || ''} ${dentiste.nom || ''}`.trim() : '—'
-    doc.text(`Dentiste: Dr. ${dentisteName}`, 20, 59)
-    let y = 75
+    doc.text(`Dentiste: Dr. ${dentisteName}`, 20, 72)
+    let y = 88
     doc.setFontSize(13)
     doc.text('Détail:', 20, y)
     y += 10
@@ -176,7 +176,7 @@ function MyInvoices() {
           position: 'fixed', inset: 0,
           background: '#1a201f55',
           backdropFilter: 'blur(4px)',
-          zIndex: 50,
+          zIndex: 150,
           opacity: selectedInvoice ? 1 : 0,
           pointerEvents: selectedInvoice ? 'auto' : 'none',
           transition: 'opacity 0.2s',
@@ -189,7 +189,7 @@ function MyInvoices() {
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '520px', maxWidth: '94vw',
         background: 'var(--bg)',
-        zIndex: 51,
+        zIndex: 160,
         transform: selectedInvoice ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.3s cubic-bezier(.3,.7,.2,1)',
         display: 'flex', flexDirection: 'column',

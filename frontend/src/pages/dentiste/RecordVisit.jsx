@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 function RecordVisit() {
   const { rdv_id } = useParams()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [formData, setFormData] = useState({ diagnostic: '', traitement_fourni: '', notes: '' })
   const [operations, setOperations] = useState([])
@@ -76,7 +78,7 @@ function RecordVisit() {
           <p style={s.pageSub}>Complétez les informations cliniques et les opérations effectuées.</p>
         </div>
 
-        <div style={s.grid}>
+        <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : s.grid.gridTemplateColumns }}>
 
           {/* ── Left: clinical info ── */}
           <div style={s.card}>

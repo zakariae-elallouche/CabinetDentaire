@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const DAYS_FR   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
@@ -20,6 +21,7 @@ const IcoReceipt = () => <svg viewBox="0 0 24 24" width="14" height="14" fill="n
 
 function AgendaDuJour() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [date, setDate]       = useState(new Date())
   const [rdvs, setRdvs]       = useState([])
   const [visites, setVisites] = useState([])
@@ -55,7 +57,7 @@ function AgendaDuJour() {
 
   const rdvChip = (statut) => ({
     'CONFIRMÉ':   { bg: 'var(--accent-soft)',  color: 'var(--accent)' },
-    'COMPLÉTÉ':   { bg: 'var(--success-soft)', color: 'var(--success)' },
+    'COMPLÉTÉ':   { bg: 'var(--info-soft)',    color: 'var(--info)' },
     'EN_ATTENTE': { bg: 'var(--amber-soft)',   color: '#8d6a2b' },
     'ANNULÉ':     { bg: 'var(--rose-soft)',    color: 'var(--rose)' },
   })[statut] || { bg: 'var(--surface)', color: 'var(--ink-3)' }
@@ -136,23 +138,30 @@ function AgendaDuJour() {
                 const done = rdv.statut === 'COMPLÉTÉ' || rdv.statut === 'ANNULÉ'
                 return (
                   <div key={rdv.id} style={{ display: 'flex', position: 'relative' }}>
-                    <div style={s.timeCol}>
-                      <span style={{ ...s.timeLabel, opacity: done ? 0.45 : 1 }}>
-                        {rdv.heure?.slice(0, 5)?.replace(':', 'h')}
-                      </span>
-                      {i < arr.length - 1 && <div style={s.connector} />}
-                    </div>
-                    <div style={{ ...s.dot, background: done ? 'var(--line-strong)' : chip.color }} />
+                    {!isMobile && (
+                      <div style={s.timeCol}>
+                        <span style={{ ...s.timeLabel, opacity: done ? 0.45 : 1 }}>
+                          {rdv.heure?.slice(0, 5)?.replace(':', 'h')}
+                        </span>
+                        {i < arr.length - 1 && <div style={s.connector} />}
+                      </div>
+                    )}
+                    {!isMobile && <div style={{ ...s.dot, background: done ? 'var(--line-strong)' : chip.color }} />}
                     <div style={{ ...s.rdvCard, opacity: done ? 0.65 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                        {isMobile && (
+                          <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '12px', fontWeight: '500', color: 'var(--ink-3)', flexShrink: 0 }}>
+                            {rdv.heure?.slice(0, 5)?.replace(':', 'h')}
+                          </span>
+                        )}
                         <span style={{ ...s.chip, background: chip.bg, color: chip.color }}>
                           <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: chip.color, display: 'inline-block' }} />
                           {rdvLabel(rdv.statut)}
                         </span>
                         <span style={s.rdvId}>RDV-{String(rdv.id).padStart(4, '0')}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                        <div>
+                      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', gap: '12px', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+                        <div style={{ minWidth: 0 }}>
                           <b style={s.patientName}>{pName(rdv)}</b>
                           {(rdv.raison || rdv.notes) && (
                             <p style={s.rdvRaison}>{rdv.raison || rdv.notes}</p>
@@ -194,45 +203,54 @@ function AgendaDuJour() {
                   <div key={v.id} style={{ ...s.visteCard, ...(open ? s.visteCardOpen : {}) }}>
                     {/* ── Summary row (always visible) ── */}
                     <div
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: '6px', cursor: 'pointer' }}
                       onClick={() => setExpandedVisite(open ? null : v.id)}
                     >
-                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
-                      <b style={{ fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Fraunces', serif", flex: 1 }}>
-                        {pName(v)}
-                      </b>
-                      <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '11px', color: 'var(--ink-3)' }}>
-                        VIS-{String(v.id).padStart(4, '0')}
-                      </span>
-                      {v.operations?.length > 0 && (
-                        <span style={{ fontSize: '11.5px', color: 'var(--ink-3)' }}>
-                          {v.operations.length} op.
+                      {/* Row 1: dot + name + ref + chevron */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
+                        <b style={{ fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Fraunces', serif", flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {pName(v)}
+                        </b>
+                        <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '11px', color: 'var(--ink-3)', flexShrink: 0 }}>
+                          VIS-{String(v.id).padStart(4, '0')}
                         </span>
-                      )}
-                      {v.facture && (
-                        <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>
-                          {parseFloat(v.facture.montant_total).toFixed(2)} MAD
-                        </span>
-                      )}
-                      {v.facture && (
-                        <span style={{
-                          display: 'inline-flex', alignItems: 'center', gap: '4px',
-                          padding: '2px 8px', borderRadius: '999px', fontSize: '11px', fontWeight: '500',
-                          background: v.facture.statut === 'payee' ? 'var(--success-soft)' : 'var(--amber-soft)',
-                          color: v.facture.statut === 'payee' ? 'var(--success)' : '#8d6a2b',
-                        }}>
-                          {v.facture.statut === 'payee' ? 'Payée' : 'En attente'}
-                        </span>
-                      )}
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
-                        <path d="m9 6 6 6-6 6"/>
-                      </svg>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
+                          <path d="m9 6 6 6-6 6"/>
+                        </svg>
+                      </div>
+                      {/* Row 2: ops + amount + status icon */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '18px' }}>
+                        {v.operations?.length > 0 && (
+                          <span style={{ fontSize: '11.5px', color: 'var(--ink-3)' }}>
+                            {v.operations.length} op.
+                          </span>
+                        )}
+                        {v.facture && (
+                          <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>
+                            {parseFloat(v.facture.montant_total).toFixed(2)} MAD
+                          </span>
+                        )}
+                        {v.facture && (
+                          <span title={v.facture.statut === 'payee' ? 'Payée' : 'En attente'} style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: '22px', height: '22px', borderRadius: '50%', flexShrink: 0,
+                            background: v.facture.statut === 'payee' ? 'var(--success-soft)' : 'var(--amber-soft)',
+                            color: v.facture.statut === 'payee' ? 'var(--success)' : '#8d6a2b',
+                          }}>
+                            {v.facture.statut === 'payee'
+                              ? <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>
+                              : <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                            }
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* ── Expanded detail ── */}
                     {open && (
                       <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                           {v.diagnostic && (
                             <div style={s.infoBox}>
                               <label style={s.infoLabel}>Diagnostic</label>

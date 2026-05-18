@@ -3,6 +3,7 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const MONTHS_FR = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc']
 const fmtDate = (str) => {
@@ -24,6 +25,7 @@ const IcoReceipt = () => <svg viewBox="0 0 24 24" width="16" height="16" fill="n
 const IcoCheck   = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
 
 function ManagePayments() {
+  const isMobile = useIsMobile()
   const [factures, setFactures] = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
@@ -120,15 +122,13 @@ function ManagePayments() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {displayList.map(f => (
-              <div key={f.id} style={s.itemCard}>
+              <div key={f.id} style={{ ...s.itemCard, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
 
-                {/* Receipt icon */}
+                {/* Row 1: icon + info */}
                 <div style={{ ...s.itemIcon, background: f.statut === 'payee' ? 'var(--success-soft)' : 'var(--amber-soft)', color: f.statut === 'payee' ? 'var(--success)' : 'var(--gold)' }}>
                   <IcoReceipt />
                 </div>
-
-                {/* Patient + facture info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ flex: isMobile ? '1 1 0' : 1, minWidth: 0 }}>
                   <b style={s.patientName}>{pName(f)}</b>
                   <span style={s.factureMeta}>
                     {f.numero_facture} · {fmtDate(f.date_facture)}
@@ -136,22 +136,18 @@ function ManagePayments() {
                   </span>
                 </div>
 
-                {/* Amount */}
-                <span style={s.montant}>
-                  {parseFloat(f.montant_total).toFixed(2)} MAD
-                </span>
-
-                {/* Status / action */}
-                {f.statut === 'payee' ? (
-                  <span style={{ ...s.chip, background: 'var(--success-soft)', color: 'var(--success)' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
-                    Payée
-                  </span>
-                ) : (
-                  <button style={s.btnPay} onClick={() => openPay(f)}>
-                    <IcoCheck /> Marquer payée
-                  </button>
-                )}
+                {/* Row 2 on mobile: amount + status/btn */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'space-between', ...(isMobile ? { width: '100%', paddingTop: '8px', borderTop: '1px solid var(--line)' } : {}) }}>
+                  <span style={s.montant}>{parseFloat(f.montant_total).toFixed(2)} MAD</span>
+                  {f.statut === 'payee' ? (
+                    <span style={{ ...s.chip, background: 'var(--success-soft)', color: 'var(--success)' }}>
+                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }} />
+                      Payée
+                    </span>
+                  ) : (
+                    <button style={s.btnPay} onClick={() => openPay(f)}><IcoCheck /> Marquer payée</button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

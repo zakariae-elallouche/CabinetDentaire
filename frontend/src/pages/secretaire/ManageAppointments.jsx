@@ -3,6 +3,7 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const FILTERS = [
   { key: '', label: 'Tous' },
@@ -19,7 +20,18 @@ const IcoCheck = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="non
 const IcoX     = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 const IcoSearch= () => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
 
+const StatIcon = ({ statut, size = 14 }) => {
+  const icons = {
+    EN_ATTENTE: <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
+    CONFIRMÉ:   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>,
+    COMPLÉTÉ:   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>,
+    ANNULÉ:     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>,
+  }
+  return icons[statut] || icons.EN_ATTENTE
+}
+
 function ManageAppointments() {
+  const isMobile = useIsMobile()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading]           = useState(true)
   const [filter, setFilter]             = useState('')
@@ -69,7 +81,7 @@ function ManageAppointments() {
   const chipStyle = (statut) => ({
     'EN_ATTENTE': { bg: 'var(--amber-soft)',   color: '#8d6a2b' },
     'CONFIRMÉ':   { bg: 'var(--accent-soft)',  color: 'var(--accent)' },
-    'COMPLÉTÉ':   { bg: 'var(--success-soft)', color: 'var(--success)' },
+    'COMPLÉTÉ':   { bg: 'var(--info-soft)',    color: 'var(--info)' },
     'ANNULÉ':     { bg: 'var(--rose-soft)',    color: 'var(--rose)' },
   })[statut] || { bg: 'var(--surface)', color: 'var(--ink-3)' }
 
@@ -133,16 +145,12 @@ function ManageAppointments() {
             {filtered.map(rdv => {
               const chip = chipStyle(rdv.statut)
               return (
-                <div key={rdv.id} style={s.itemCard}>
-                  {/* Time block */}
+                <div key={rdv.id} style={{ ...s.itemCard, gridTemplateColumns: isMobile ? 'auto auto 1fr' : 'auto auto 1fr auto' }}>
                   <div style={s.timeBlock}>
                     <span style={s.timeHour}>{rdv.heure?.slice(0,5)?.replace(':','h')}</span>
                     <span style={s.timeDate}>{formatDate(rdv.date)}</span>
                   </div>
-
                   <div style={s.divider} />
-
-                  {/* Patient info */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <b style={s.patientName}>{pName(rdv)}</b>
                     <span style={s.patientMeta}>
@@ -150,25 +158,30 @@ function ManageAppointments() {
                       RDV-{String(rdv.id).padStart(4, '0')}
                     </span>
                     {rdv.notes && <p style={s.notes}>{rdv.notes}</p>}
-                  </div>
-
-                  {/* Status + actions */}
-                  <div style={s.actions}>
-                    <span style={{ ...s.chip, background: chip.bg, color: chip.color }}>
-                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: chip.color, display: 'inline-block' }} />
-                      {statutLabel(rdv.statut)}
-                    </span>
-                    {rdv.statut === 'EN_ATTENTE' && (
-                      <>
-                        <button style={s.btnConfirm} onClick={() => handleConfirm(rdv.id)}>
-                          <IcoCheck /> Confirmer
-                        </button>
-                        <button style={s.btnReject} onClick={() => setRejectModal(rdv.id)}>
-                          <IcoX /> Rejeter
-                        </button>
-                      </>
+                    {isMobile && (
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <span title={statutLabel(rdv.statut)} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', background: chip.bg, color: chip.color, flexShrink: 0 }}>
+                          <StatIcon statut={rdv.statut} />
+                        </span>
+                        {rdv.statut === 'EN_ATTENTE' && <>
+                          <button style={s.btnConfirm} onClick={() => handleConfirm(rdv.id)}><IcoCheck /> Confirmer</button>
+                          <button style={s.btnReject} onClick={() => setRejectModal(rdv.id)}><IcoX /> Rejeter</button>
+                        </>}
+                      </div>
                     )}
                   </div>
+                  {!isMobile && (
+                    <div style={s.actions}>
+                      <span style={{ ...s.chip, background: chip.bg, color: chip.color }}>
+                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: chip.color, display: 'inline-block' }} />
+                        {statutLabel(rdv.statut)}
+                      </span>
+                      {rdv.statut === 'EN_ATTENTE' && <>
+                        <button style={s.btnConfirm} onClick={() => handleConfirm(rdv.id)}><IcoCheck /> Confirmer</button>
+                        <button style={s.btnReject} onClick={() => setRejectModal(rdv.id)}><IcoX /> Rejeter</button>
+                      </>}
+                    </div>
+                  )}
                 </div>
               )
             })}

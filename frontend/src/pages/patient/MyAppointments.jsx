@@ -4,7 +4,18 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { confirmDialog } from '../../components/DialogProvider'
 import EmptyState from '../../components/EmptyState'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+
+const StatusIcon = ({ statut, size = 14 }) => {
+  const icons = {
+    EN_ATTENTE: <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
+    CONFIRMÉ:   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>,
+    COMPLÉTÉ:   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>,
+    ANNULÉ:     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>,
+  }
+  return icons[statut] || icons.EN_ATTENTE
+}
 
 const FILTERS = [
   { key: '', label: 'Tous' },
@@ -16,6 +27,7 @@ const FILTERS = [
 
 function MyAppointments() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
@@ -62,9 +74,10 @@ function MyAppointments() {
     }
   }
 
-  const filtered = filter
+  const filtered = (filter
     ? appointments.filter(r => r.statut === filter)
     : appointments
+  ).slice().sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')))
 
   const countBy = (key) => appointments.filter(r => r.statut === key).length
 
@@ -81,7 +94,7 @@ function MyAppointments() {
     const map = {
       'EN_ATTENTE': { background: 'var(--amber-soft)', color: '#8d6a2b', dot: 'var(--gold)' },
       'CONFIRMÉ':   { background: 'var(--accent-soft)', color: 'var(--accent)', dot: 'var(--accent)' },
-      'COMPLÉTÉ':   { background: 'var(--success-soft)', color: 'var(--success)', dot: 'var(--success)' },
+      'COMPLÉTÉ':   { background: 'var(--info-soft)',    color: 'var(--info)',    dot: 'var(--info)' },
       'ANNULÉ':     { background: 'var(--rose-soft)', color: 'var(--rose)', dot: 'var(--rose)' },
     }
     return map[statut] || map['EN_ATTENTE']
@@ -147,7 +160,7 @@ function MyAppointments() {
           filtered.map(rdv => {
             const chip = chipStyle(rdv.statut)
             return (
-              <div key={rdv.id} style={styles.apptCard}>
+              <div key={rdv.id} style={{ ...styles.apptCard, gridTemplateColumns: isMobile ? 'auto 1fr' : 'auto auto 1fr auto', gap: isMobile ? '12px' : '20px', padding: isMobile ? '14px 16px' : '18px 22px' }}>
 
                 {/* Heure + date */}
                 <div style={styles.apptTime}>
@@ -160,44 +173,36 @@ function MyAppointments() {
                 </div>
 
                 {/* Séparateur */}
-                <div style={styles.apptDivider}/>
+                {!isMobile && <div style={styles.apptDivider}/>}
 
-                {/* Info */}
-                <div style={{ flex: 1 }}>
-                  <b style={styles.apptTitle}>
-                    {rdv.notes || 'Rendez-vous médical'}
-                  </b>
+                {/* Info + actions */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <b style={styles.apptTitle}>{rdv.notes || 'Rendez-vous médical'}</b>
                   <small style={styles.apptMeta}>
                     avec Dr. {rdv.dentiste?.nom_complet || 'Médecin'} · {rdv.id ? `RDV-${String(rdv.id).padStart(4, '0')}` : ''}
                   </small>
-                </div>
-
-                {/* Statut + actions */}
-                <div style={styles.apptActions}>
-                  {/* Chip statut */}
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '6px',
-                    padding: '3px 10px', borderRadius: '999px',
-                    fontSize: '11.5px', fontWeight: '500',
-                    background: chip.background, color: chip.color,
-                  }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: chip.dot }}/>
-                    {rdv.statut === 'EN_ATTENTE' ? 'En attente' :
-                     rdv.statut === 'CONFIRMÉ' ? 'Confirmé' :
-                     rdv.statut === 'COMPLÉTÉ' ? 'Complété' : 'Annulé'}
-                  </span>
-
-                  <button style={styles.btnGhost} onClick={() => openDetail(rdv.id)}>Détails</button>
-
-                  {rdv.statut === 'EN_ATTENTE' && (
-                    <button
-                      style={styles.btnDanger}
-                      onClick={() => handleCancel(rdv.id)}
-                    >
-                      Annuler
-                    </button>
+                  {isMobile && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '8px' }}>
+                      <span title={rdv.statut === 'EN_ATTENTE' ? 'En attente' : rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : 'Annulé'} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '50%', background: chip.background, color: chip.color, flexShrink: 0 }}>
+                        <StatusIcon statut={rdv.statut} size={15} />
+                      </span>
+                      <button style={styles.btnGhost} onClick={() => openDetail(rdv.id)}>Détails</button>
+                      {rdv.statut === 'EN_ATTENTE' && <button style={styles.btnDanger} onClick={() => handleCancel(rdv.id)}>Annuler</button>}
+                    </div>
                   )}
                 </div>
+
+                {/* Desktop actions */}
+                {!isMobile && (
+                  <div style={styles.apptActions}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '3px 10px', borderRadius: '999px', fontSize: '11.5px', fontWeight: '500', background: chip.background, color: chip.color }}>
+                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: chip.dot }}/>
+                      {rdv.statut === 'EN_ATTENTE' ? 'En attente' : rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : 'Annulé'}
+                    </span>
+                    <button style={styles.btnGhost} onClick={() => openDetail(rdv.id)}>Détails</button>
+                    {rdv.statut === 'EN_ATTENTE' && <button style={styles.btnDanger} onClick={() => handleCancel(rdv.id)}>Annuler</button>}
+                  </div>
+                )}
 
               </div>
             )
@@ -211,7 +216,7 @@ function MyAppointments() {
           position: 'fixed', inset: 0,
           background: '#1a201f55',
           backdropFilter: 'blur(4px)',
-          zIndex: 50,
+          zIndex: 150,
           opacity: detail ? 1 : 0,
           pointerEvents: detail ? 'auto' : 'none',
           transition: 'opacity 0.2s',
@@ -220,11 +225,18 @@ function MyAppointments() {
       />
 
       {/* ─── Drawer ─── */}
-      <div style={{
+      <div style={isMobile ? {
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: '92dvh', background: 'var(--bg)', zIndex: 160,
+        transform: detail ? 'translateY(0)' : 'translateY(100%)',
+        transition: 'transform 0.3s cubic-bezier(.3,.7,.2,1)',
+        display: 'flex', flexDirection: 'column',
+        borderRadius: '20px 20px 0 0',
+        boxShadow: '0 -20px 60px #1a201f22',
+      } : {
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '480px', maxWidth: '94vw',
-        background: 'var(--bg)',
-        zIndex: 51,
+        background: 'var(--bg)', zIndex: 160,
         transform: detail ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.3s cubic-bezier(.3,.7,.2,1)',
         display: 'flex', flexDirection: 'column',

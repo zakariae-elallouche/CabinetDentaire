@@ -16,6 +16,8 @@
   --rose-soft: #f2dede;
   --success: #2e6e4a;
   --success-soft: #d9e8df;
+  --info: #1e40af;
+  --info-soft: #dbeafe;
   --radius: 14px;
   --radius-sm: 8px;
 }
@@ -51,3 +53,47 @@ input, textarea, select { font-family: inherit; color: inherit; }
 .Toastify__toast--error   .Toastify__toast-icon svg { fill: var(--rose)    !important; }
 .Toastify__toast--warning .Toastify__toast-icon svg { fill: var(--gold)    !important; }
 .Toastify__toast--info    .Toastify__toast-icon svg { fill: var(--accent)  !important; }
+
+/* ── Mobile-first responsive utilities ── */
+@media (max-width: 767px) {
+  /* Grids */
+  .m-stack   { grid-template-columns: 1fr !important; }
+  .m-2col    { grid-template-columns: repeat(2, 1fr) !important; }
+  .m-3col    { grid-template-columns: repeat(3, 1fr) !important; }
+
+  /* Spacing */
+  .m-gap-sm  { gap: 10px !important; }
+  .m-pad-sm  { padding: 14px 16px !important; }
+  .m-no-pad  { padding-left: 0 !important; padding-right: 0 !important; }
+
+  /* Typography */
+  .m-title   { font-size: 26px !important; }
+  .m-hide    { display: none !important; }
+  .m-full    { width: 100% !important; max-width: 100% !important; }
+
+  /* Auth pages */
+  .login-slogan   { display: none !important; }
+  .login-panel    { width: 100% !important; max-width: 100% !important; box-shadow: none !important; }
+  .auth-bg        { display: none !important; }
+  .auth-logo-top  { display: none !important; }
+  .auth-mobile-logo { display: flex !important; }
+  .auth-form-row  { grid-template-columns: 1fr !important; }
+
+  /* Cards */
+  .appt-card-grid { grid-template-columns: auto 1fr !important; gap: 12px !important; }
+  .visit-card-grid { grid-template-columns: auto 1fr !important; }
+  .appt-actions   { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+
+  /* Hero rows in dark cards */
+  .hero-row-grid { grid-template-columns: 50px 1fr 80px !important; gap: 8px !important; }
+
+  /* Drawer full width on mobile */
+  .drawer-mobile { width: 100% !important; max-width: 100% !important; top: auto !important; height: 92dvh !important; border-radius: 20px 20px 0 0 !important; }
+
+  /* Page titles */
+  h1 { font-size: 26px !important; }
+
+  /* Prevent horizontal overflow */
+  img { max-width: 100%; }
+  table { display: block; overflow-x: auto; }
+}

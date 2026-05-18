@@ -17,6 +17,15 @@ class RendezVousController extends Controller
     {
         $user = $request->user();
 
+        // Auto-cancel past RDVs
+        RendezVous::where('statut', 'confirme')
+            ->where('date_heure', '<', Carbon::now())
+            ->update(['statut' => 'annule', 'notes' => 'Patient absent au rendez-vous']);
+
+        RendezVous::where('statut', 'en_attente')
+            ->where('date_heure', '<', Carbon::now())
+            ->update(['statut' => 'annule', 'notes' => 'Non confirmé dans les délais']);
+
         $rdvs = match($user->role) {
             'patient' => RendezVous::with('patient')
                 ->where('patient_id', Patient::where('utilisateur_id', $user->id)->value('id'))
@@ -59,6 +68,7 @@ class RendezVousController extends Controller
         ]);
 
         AuditService::log('create', 'rendez_vous', $rdv->id, null, $rdv->toArray());
+        NotificationService::rdvDemande($rdv);
 
         return response()->json($rdv->load('patient')->toFrontend(), 201);
     }
@@ -149,13 +159,14 @@ class RendezVousController extends Controller
             ->map(fn($d) => Carbon::parse($d)->format('H:i'))
             ->toArray();
 
+        $now   = Carbon::now();
         $slots = [];
         $start = Carbon::parse("$date 09:00");
-        $end   = Carbon::parse("$date 17:00");
+        $end   = Carbon::parse("$date 18:00");
 
         while ($start < $end) {
             $slot = $start->format('H:i');
-            if (!in_array($slot, $taken)) $slots[] = $slot;
+            if (!in_array($slot, $taken) && $start->gt($now)) $slots[] = $slot;
             $start->addMinutes(30);
         }
 

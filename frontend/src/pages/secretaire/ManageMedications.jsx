@@ -4,6 +4,7 @@ import Layout from '../../components/Layout'
 import { confirmDialog } from '../../components/DialogProvider'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const FORMES = ['Comprimé', 'Gélule', 'Sirop', 'Injectable', 'Crème']
 
@@ -21,6 +22,7 @@ const formeColor = (forme) => ({
 })[forme] || { bg: 'var(--surface)', color: 'var(--ink-2)' }
 
 function ManageMedications() {
+  const isMobile = useIsMobile()
   const [medications, setMedications] = useState([])
   const [loading, setLoading]         = useState(true)
   const [modal, setModal]             = useState(false)
@@ -77,7 +79,7 @@ function ManageMedications() {
     <Layout>
       <div>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h1 style={s.pageTitle}>
               Gestion des <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>médicaments</em>
@@ -103,7 +105,7 @@ function ManageMedications() {
             {medications.map(med => {
               const fc = formeColor(med.forme)
               return (
-                <div key={med.id} style={s.itemCard}>
+                <div key={med.id} style={{ ...s.itemCard, flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
                   {/* Pill icon */}
                   <div style={s.medIcon}>
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -117,7 +119,19 @@ function ManageMedications() {
                     {med.description && <p style={s.medDesc}>{med.description}</p>}
                   </div>
 
-                  {/* Metadata */}
+                  {/* Metadata + Actions */}
+                  {isMobile ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', width: '100%', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
+                      <span style={{ ...s.chip, background: fc.bg, color: fc.color }}>{med.forme}</span>
+                      {med.dosage && <span style={s.dosageBadge}>{med.dosage}</span>}
+                      {med.prix_unitaire && <span style={s.prixBadge}>{parseFloat(med.prix_unitaire).toFixed(2)} MAD</span>}
+                      <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px' }}>
+                        <button style={s.btnEdit} onClick={() => openEdit(med)}><IcoEdit /> Modifier</button>
+                        <button style={s.btnDelete} onClick={() => handleDelete(med.id)}><IcoTrash /></button>
+                      </div>
+                    </div>
+                  ) : (
+                  <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                     <span style={{ ...s.chip, background: fc.bg, color: fc.color }}>{med.forme}</span>
                     {med.dosage && (
@@ -128,7 +142,6 @@ function ManageMedications() {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                     <button style={s.btnEdit} onClick={() => openEdit(med)} title="Modifier">
                       <IcoEdit /> Modifier
@@ -137,6 +150,8 @@ function ManageMedications() {
                       <IcoTrash />
                     </button>
                   </div>
+                  </>
+                  )}
                 </div>
               )
             })}
@@ -157,7 +172,7 @@ function ManageMedications() {
             <button onClick={() => setModal(false)} style={s.btnClose}>✕</button>
           </div>
 
-          <div style={s.formRow}>
+          <div style={{ ...s.formRow, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             <div style={s.formGroup}>
               <label style={s.label}>Nom</label>
               <input style={s.input} name="nom" value={formData.nom} onChange={handleChange} placeholder="Nom du médicament" />
@@ -169,7 +184,7 @@ function ManageMedications() {
               </select>
             </div>
           </div>
-          <div style={s.formRow}>
+          <div style={{ ...s.formRow, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
             <div style={s.formGroup}>
               <label style={s.label}>Dosage</label>
               <input style={s.input} name="dosage" value={formData.dosage} onChange={handleChange} placeholder="Ex: 500mg" />

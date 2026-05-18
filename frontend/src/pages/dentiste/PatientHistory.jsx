@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 // ─────────────────────────────────────────────
@@ -9,6 +10,7 @@ import api from '../../api'
 // ─────────────────────────────────────────────
 function PatientsList() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -68,7 +70,7 @@ function PatientsList() {
         ) : filtered.length === 0 ? (
           <EmptyState title="Aucun patient trouvé" sub="Essayez un autre terme de recherche." />
         ) : (
-          <div style={s.grid}>
+          <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))' }}>
             {filtered.map(patient => (
               <div
                 key={patient.id}
@@ -125,6 +127,7 @@ function PatientsList() {
 function PatientDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [patient, setPatient] = useState(null)
   const [visites, setVisites] = useState([])
@@ -181,7 +184,7 @@ function PatientDetail() {
           </h1>
         </div>
 
-        <div style={s.detailGrid}>
+        <div style={{ ...s.detailGrid, gridTemplateColumns: isMobile ? '1fr' : '280px 1fr' }}>
 
           {/* ── Left: profile ── */}
           <div>

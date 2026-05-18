@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { promptDialog } from '../../components/DialogProvider'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 const IcoCal      = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -16,6 +17,7 @@ const IcoChevronR = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="
 
 function SecretaireDashboard() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [stats, setStats] = useState({ rdvEnAttente: 0, facturesEnAttente: 0, totalPatients: 0, rdvCeMois: 0 })
   const [rdvEnAttente, setRdvEnAttente] = useState([])
   const [rdvAujourdhui, setRdvAujourdhui] = useState([])
@@ -103,7 +105,7 @@ function SecretaireDashboard() {
         </div>
 
         {/* ─── Hero + Actions ─── */}
-        <div style={styles.dashHero}>
+        <div style={{ ...styles.dashHero, gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr' }}>
         <div style={styles.heroCard}>
           <div style={styles.heroEyebrow}>VISITES DU JOUR</div>
 
@@ -126,25 +128,30 @@ function SecretaireDashboard() {
               </div>
               <div style={styles.heroLine} />
               <div style={styles.heroList}>
-                {rdvAujourdhui.map((rdv, i) => {
-                  const statusColor = rdv.statut === 'CONFIRMÉ' ? 'rgba(125,211,200,0.9)' : rdv.statut === 'COMPLÉTÉ' ? 'rgba(125,211,200,0.6)' : 'rgba(255,255,255,0.6)'
+                {rdvAujourdhui.slice(0, 3).map((rdv, i, arr) => {
+                  const statusColor = rdv.statut === 'CONFIRMÉ' ? 'rgba(125,211,200,0.9)' : rdv.statut === 'COMPLÉTÉ' ? 'rgba(147,197,253,0.9)' : 'rgba(255,255,255,0.6)'
                   return (
-                    <div key={rdv.id} style={{
-                      ...styles.heroRow,
-                      borderBottom: i < rdvAujourdhui.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none',
-                    }}>
+                    <div key={rdv.id} style={{ ...styles.heroRow, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none', gridTemplateColumns: isMobile ? '48px 1fr 56px' : '60px 1fr 120px 80px' }}>
                       <span style={styles.heroTime}>{rdv.heure?.slice(0, 5)?.replace(':', 'h')}</span>
-                      <span style={styles.heroPatient}>
+                      <span style={{ ...styles.heroPatient, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {rdv.patient ? `${rdv.patient.prenom} ${rdv.patient.nom}` : '—'}
                       </span>
-                      <span style={{ ...styles.heroStatut, color: statusColor }}>
-                        {rdv.statut === 'EN_ATTENTE' ? 'En attente' : rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : rdv.statut}
+                      <span style={{ ...styles.heroStatut, color: statusColor, fontSize: isMobile ? '10px' : '12px', whiteSpace: 'nowrap' }}>
+                        {rdv.statut === 'EN_ATTENTE' ? (isMobile ? 'Attente' : 'En attente') : rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : rdv.statut}
                       </span>
-                      <span style={styles.heroRef}>#{String(rdv.id).padStart(4, '0')}</span>
+                      {!isMobile && <span style={styles.heroRef}>#{String(rdv.id).padStart(4, '0')}</span>}
                     </div>
                   )
                 })}
               </div>
+              {rdvAujourdhui.length > 3 && (
+                <div
+                  style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '10px', cursor: 'pointer' }}
+                  onClick={() => navigate('/secretaire/rendez-vous')}
+                >
+                  +{rdvAujourdhui.length - 3} autre{rdvAujourdhui.length - 3 > 1 ? 's' : ''} → Voir tout
+                </div>
+              )}
             </>
           )}
         </div>{/* end heroCard */}
@@ -177,7 +184,7 @@ function SecretaireDashboard() {
         </div>{/* end dashHero */}
 
         {/* Raccourcis */}
-        <div style={styles.shortcutGrid}>
+        <div style={{ ...styles.shortcutGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)' }}>
           {SHORTCUTS.map(s => (
             <button key={s.path} style={styles.shortcut} onClick={() => navigate(s.path)}>
               <div style={styles.shortcutIcon}><s.Ico /></div>
@@ -258,8 +265,9 @@ const styles = {
   heroCard: {
     background: 'linear-gradient(155deg, #0f4842 0%, #1d6e66 100%)',
     borderRadius: 'var(--radius)',
-    padding: '28px 32px',
+    padding: '28px 20px',
     color: 'white',
+    overflow: 'hidden',
   },
   tasksCard: {
     background: 'var(--card)',

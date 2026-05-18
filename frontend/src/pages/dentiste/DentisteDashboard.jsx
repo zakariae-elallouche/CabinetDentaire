@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 const IcoCal      = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -17,6 +18,7 @@ const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','a
 function DentisteDashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [rdvAujourdhui, setRdvAujourdhui] = useState([])
   const [stats, setStats] = useState({ total: 0, completes: 0, aVenir: 0 })
   const [loading, setLoading] = useState(true)
@@ -45,7 +47,7 @@ function DentisteDashboard() {
     rdv.patient ? `${rdv.patient.prenom || ''} ${rdv.patient.nom || ''}`.trim() : rdv.patient?.nom_complet || '—'
 
   const chipColor = (statut) => {
-    if (statut === 'COMPLÉTÉ') return 'rgba(125,211,200,0.6)'
+    if (statut === 'COMPLÉTÉ') return 'rgba(147,197,253,0.9)'
     if (statut === 'CONFIRMÉ') return 'rgba(125,211,200,0.9)'
     return 'rgba(255,255,255,0.55)'
   }
@@ -91,22 +93,42 @@ function DentisteDashboard() {
                 </div>
                 <div style={s.heroLine} />
                 <div>
-                  {rdvAujourdhui.map((rdv, i) => (
-                    <div key={rdv.id} style={{ ...s.heroRow, borderBottom: i < rdvAujourdhui.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                      <span style={s.heroTime}>{rdv.heure?.slice(0, 5)?.replace(':', 'h')}</span>
-                      <span style={s.heroPatient}>{patientName(rdv)}</span>
-                      <span style={{ ...s.heroStatut, color: chipColor(rdv.statut) }}>
-                        {rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : rdv.statut}
-                      </span>
-                      <button
-                        style={s.heroBtnVisite}
-                        onClick={() => navigate(`/dentiste/visite/${rdv.id}`)}
-                      >
-                        Enregistrer →
-                      </button>
-                    </div>
+                  {rdvAujourdhui.slice(0, 5).map((rdv, i, arr) => (
+                    isMobile ? (
+                      <div key={rdv.id} style={{ borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none', padding: '10px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={s.heroTime}>{rdv.heure?.slice(0, 5)?.replace(':', 'h')}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ ...s.heroPatient, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{patientName(rdv)}</span>
+                          <span style={{ ...s.heroStatut, color: chipColor(rdv.statut), fontSize: '11px' }}>
+                            {rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : rdv.statut}
+                          </span>
+                        </div>
+                        <button style={s.heroBtnVisite} onClick={() => navigate(`/dentiste/visite/${rdv.id}`)}>
+                          →
+                        </button>
+                      </div>
+                    ) : (
+                      <div key={rdv.id} style={{ ...s.heroRow, borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                        <span style={s.heroTime}>{rdv.heure?.slice(0, 5)?.replace(':', 'h')}</span>
+                        <span style={s.heroPatient}>{patientName(rdv)}</span>
+                        <span style={{ ...s.heroStatut, color: chipColor(rdv.statut) }}>
+                          {rdv.statut === 'CONFIRMÉ' ? 'Confirmé' : rdv.statut === 'COMPLÉTÉ' ? 'Complété' : rdv.statut}
+                        </span>
+                        <button style={s.heroBtnVisite} onClick={() => navigate(`/dentiste/visite/${rdv.id}`)}>
+                          Enregistrer →
+                        </button>
+                      </div>
+                    )
                   ))}
                 </div>
+                {rdvAujourdhui.length > 5 && (
+                  <div
+                    style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '10px', cursor: 'pointer' }}
+                    onClick={() => navigate('/dentiste/agenda')}
+                  >
+                    +{rdvAujourdhui.length - 5} autre{rdvAujourdhui.length - 5 > 1 ? 's' : ''} → Voir tout
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -114,16 +136,16 @@ function DentisteDashboard() {
         </div>
 
         {/* Stats */}
-        <div style={s.statsGrid}>
+        <div style={{ ...s.statsGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: isMobile ? '10px' : '16px' }}>
           {[
             { Ico: IcoCal,   label: "RDV aujourd'hui", value: stats.total,     bg: 'var(--accent-soft)',  color: 'var(--accent)' },
             { Ico: IcoCheck, label: 'Visites complétées', value: stats.completes, bg: 'var(--success-soft)', color: 'var(--success)' },
             { Ico: IcoClock, label: 'À venir',            value: stats.aVenir,    bg: 'var(--amber-soft)',   color: 'var(--gold)' },
           ].map(({ Ico, label, value, bg, color }) => (
-            <div key={label} style={s.statCard}>
-              <div style={{ ...s.statIcon, background: bg, color }}><Ico /></div>
+            <div key={label} style={{ ...s.statCard, padding: isMobile ? '14px' : '20px', gap: isMobile ? '10px' : '16px' }}>
+              <div style={{ ...s.statIcon, width: isMobile ? '36px' : '48px', height: isMobile ? '36px' : '48px', background: bg, color }}><Ico /></div>
               <div>
-                <div style={s.statNum}>{value}</div>
+                <div style={{ ...s.statNum, fontSize: isMobile ? '1.4rem' : '1.8rem' }}>{value}</div>
                 <div style={s.statLbl}>{label}</div>
               </div>
             </div>
@@ -173,10 +195,11 @@ const s = {
   heroPatient: { fontSize: '14px', fontWeight: '500', color: 'white' },
   heroStatut: { fontSize: '12px', fontWeight: '500' },
   heroBtnVisite: {
-    padding: '5px 12px', borderRadius: '7px', fontSize: '12px', fontWeight: '500',
-    background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)',
-    color: 'white', cursor: 'pointer', fontFamily: 'inherit',
-    backdropFilter: 'blur(4px)', whiteSpace: 'nowrap',
+    padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '600',
+    background: 'white', border: 'none',
+    color: 'var(--accent)', cursor: 'pointer', fontFamily: 'inherit',
+    whiteSpace: 'nowrap', letterSpacing: '0.01em',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
   },
   actionsCard: {
     background: 'var(--card)', border: '1px solid var(--line)',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
@@ -12,6 +13,7 @@ const IcoPill    = () => <svg viewBox="0 0 24 24" width="14" height="14" fill="n
 function VisiteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [visite, setVisite] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -73,7 +75,7 @@ function VisiteDetail() {
           </div>
         </div>
 
-        <div style={s.grid}>
+        <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : s.grid.gridTemplateColumns }}>
 
           {/* ── Left col ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

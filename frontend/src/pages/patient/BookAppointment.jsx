@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 const DAYS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM']
@@ -13,6 +14,7 @@ const ALL_SLOTS = [...SLOTS_MATIN, ...SLOTS_APREM]
 
 function BookAppointment() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const today = new Date()
   const toLocalDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
@@ -31,7 +33,11 @@ function BookAppointment() {
     api.get(`/rendez-vous/available-slots?date=${dateStr}`)
       .then(res => {
         const available = res.data.slots || []
-        setTakenSlots(ALL_SLOTS.filter(s => !available.includes(s)))
+        const today = new Date()
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+        const nowTime = `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
+        const isToday = dateStr === todayStr
+        setTakenSlots(ALL_SLOTS.filter(s => !available.includes(s) || (isToday && s <= nowTime)))
       })
       .catch(() => setTakenSlots([]))
       .finally(() => setLoadingSlots(false))
@@ -115,7 +121,7 @@ function BookAppointment() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '24px', alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: isMobile ? '16px' : '24px', alignItems: 'start' }}>
 
           {/* ─── Calendrier ─── */}
           <div style={styles.card}>
@@ -215,7 +221,7 @@ function BookAppointment() {
               {/* Matin */}
               <div style={{ marginBottom: '14px' }}>
                 <div style={styles.slotLabel}>Matin</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
                   {SLOTS_MATIN.map(slot => {
                     const taken = takenSlots.includes(slot)
                     const selected = selectedSlot === slot
@@ -240,7 +246,7 @@ function BookAppointment() {
               {/* Après-midi */}
               <div>
                 <div style={styles.slotLabel}>Après-midi</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
                   {SLOTS_APREM.map(slot => {
                     const taken = takenSlots.includes(slot)
                     const selected = selectedSlot === slot

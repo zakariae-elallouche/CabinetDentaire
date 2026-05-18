@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import jsPDF from 'jspdf'
+import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
 
 const MONTHS_SHORT = ['JANV','FÉVR','MARS','AVR','MAI','JUIN','JUIL','AOÛT','SEPT','OCT','NOV','DÉC']
 const MONTHS_LONG  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
@@ -15,6 +17,7 @@ const fmtDate = (dateStr) => {
 }
 
 function MyVisits() {
+  const isMobile = useIsMobile()
   const [visits, setVisits]       = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(false)
@@ -53,19 +56,19 @@ function MyVisits() {
   const closeDrawer = () => setSelected(null)
 
   // ── PDF Facture ──
-  const downloadFacturePDF = () => {
+  const downloadFacturePDF = async () => {
     const f = selected?.facture
     if (!f) return
+    const img = new Image(); img.src = '/HZPdf.jpg'
+    await new Promise(r => { img.onload = r; img.onerror = r })
     const doc = new jsPDF()
-    doc.setFontSize(20)
-    doc.setTextColor(15, 72, 66)
-    doc.text('HZ Dentaire', 20, 20)
+    if (img.complete && img.naturalWidth) doc.addImage(img, 'JPEG', 15, 5, 80, 33)
     doc.setFontSize(12)
     doc.setTextColor(50)
-    doc.text(`Facture N°: ${f.numero_facture || '—'}`, 20, 35)
-    doc.text(`Date: ${fmtDate(f.date_facture)}`, 20, 43)
-    doc.text(`Visite du: ${fmtDate(selected.date_visite)}`, 20, 51)
-    let y = 67
+    doc.text(`Facture N°: ${f.numero_facture || '—'}`, 20, 48)
+    doc.text(`Date: ${fmtDate(f.date_facture)}`, 20, 56)
+    doc.text(`Visite du: ${fmtDate(selected.date_visite)}`, 20, 64)
+    let y = 80
     doc.setFontSize(13)
     doc.text('Détail:', 20, y)
     y += 10
@@ -91,32 +94,13 @@ function MyVisits() {
   }
 
   // ── PDF Ordonnance ──
-  const downloadOrdonnancePDF = () => {
+  const downloadOrdonnancePDF = async () => {
     const p = selected?.ordonnance
     if (!p) return
-    const doc = new jsPDF()
-    doc.setFontSize(20)
-    doc.setTextColor(15, 72, 66)
-    doc.text('HZ Dentaire', 20, 20)
-    doc.setFontSize(14)
-    doc.setTextColor(50)
-    doc.text(`Ordonnance RX-${String(p.id).padStart(4, '0')}`, 20, 35)
-    doc.setFontSize(12)
-    doc.text(`Date: ${fmtDate(p.date_delivrance)}`, 20, 45)
-    if (p.instructions_generales) {
-      doc.text(`Instructions: ${p.instructions_generales}`, 20, 53)
-    }
-    let y = 65
-    doc.setFontSize(13)
-    doc.text('Médicaments:', 20, y)
-    ;(p.medicaments || []).forEach(m => {
-      y += 10
-      doc.setFontSize(11)
-      const nom = m.medicament?.nom || m.nom || '—'
-      const detail = [m.frequence, m.duree_jours ? `${m.duree_jours} jours` : null].filter(Boolean).join(' · ')
-      doc.text(`• ${nom}${detail ? `  (${detail})` : ''}`, 25, y)
-    })
-    doc.save(`ordonnance-RX-${String(p.id).padStart(4, '0')}.pdf`)
+    const patientName = selected?.patient
+      ? `${selected.patient.prenom || ''} ${selected.patient.nom || ''}`.trim()
+      : '—'
+    await generateOrdonnancePDF(p, patientName)
   }
 
   return (
@@ -154,49 +138,82 @@ function MyVisits() {
         ) : filtered.length === 0 ? (
           <EmptyState title="Aucune visite" sub="Aucune visite enregistrée pour le moment." />
         ) : (
-          <div style={s.card}>
-            {filtered.map((visite, i) => {
-              const d     = new Date(visite.date_visite)
-              const day   = isNaN(d) ? '—' : d.getDate()
-              const month = isNaN(d) ? '—' : MONTHS_SHORT[d.getMonth()]
-              const year  = isNaN(d) ? '' : d.getFullYear()
-              const title = visite.diagnostic || visite.traitement_fourni || 'Visite médicale'
-              return (
-                <div
-                  key={visite.id}
-                  onClick={() => openDrawer(visite)}
-                  style={{
-                    ...s.visitRow,
-                    borderBottom: i < filtered.length - 1 ? '1px solid var(--line)' : 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={s.visitDate}>
-                    <div style={s.visitDay}>{day}</div>
-                    <div style={s.visitMonth}>{month}</div>
-                    <div style={s.visitYear}>{year}</div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <b style={s.visitTitle}>{title}</b>
-                    <small style={s.visitMeta}>V-{String(visite.id).padStart(4, '0')}</small>
-                    {visite.traitement_fourni && (
-                      <p style={s.visitDiag}>{visite.traitement_fourni}</p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                    <span style={{ ...s.chip, background: 'var(--success-soft)', color: 'var(--success)' }}>
-                      <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--success)', display: 'inline-block' }}/>
-                      Complété
-                    </span>
-                    <div style={{ display: 'flex', gap: '6px', fontSize: '11.5px', color: 'var(--ink-3)' }}>
-                      {visite.ordonnance && <span>Ord.</span>}
-                      {visite.facture    && <span>Fact.</span>}
+          filtered.map((visite) => {
+            const d     = new Date(visite.date_visite)
+            const day   = isNaN(d) ? '—' : d.getDate()
+            const month = isNaN(d) ? '—' : MONTHS_SHORT[d.getMonth()]
+            const year  = isNaN(d) ? '' : d.getFullYear()
+            const title = visite.diagnostic || visite.traitement_fourni || 'Visite médicale'
+            return (
+              <div key={visite.id} style={{ ...s.visitCard, display: isMobile ? 'flex' : 'grid', padding: isMobile ? '16px' : '18px 22px' }}>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                    {/* Row 1: date | info | status icon */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                      <div style={{ ...s.visitDateCol, minWidth: '44px', flexShrink: 0 }}>
+                        <div style={s.visitDay}>{day}</div>
+                        <div style={s.visitMonth}>{month}</div>
+                        <div style={s.visitYear}>{year}</div>
+                      </div>
+                      <div style={{ width: '1px', alignSelf: 'stretch', background: 'var(--line)', flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <b style={s.visitTitle}>{title}</b>
+                        <small style={s.visitMeta}>
+                          V-{String(visite.id).padStart(4, '0')}
+                          {visite.traitement_fourni && visite.diagnostic ? ` · ${visite.traitement_fourni}` : ''}
+                        </small>
+                      </div>
+                      <span title="Complété" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '50%', background: 'var(--info-soft)', color: 'var(--info)', flexShrink: 0 }}>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>
+                      </span>
+                    </div>
+                    {/* Row 2: badges left | Détails right */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {visite.facture    && <span style={s.badge}>Facture</span>}
+                        {visite.ordonnance && <span style={s.badge}>Ordonnance</span>}
+                        {!visite.facture && !visite.ordonnance && <span />}
+                      </div>
+                      <button style={s.btnGhost} onClick={() => openDrawer(visite)}>Détails</button>
                     </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                ) : (
+                  <>
+                    {/* Date */}
+                    <div style={s.visitDateCol}>
+                      <div style={s.visitDay}>{day}</div>
+                      <div style={s.visitMonth}>{month}</div>
+                      <div style={s.visitYear}>{year}</div>
+                    </div>
+                    {/* Divider */}
+                    <div style={s.visitDivider} />
+                    {/* Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <b style={s.visitTitle}>{title}</b>
+                      <small style={s.visitMeta}>
+                        V-{String(visite.id).padStart(4, '0')}
+                        {visite.traitement_fourni && visite.diagnostic ? ` · ${visite.traitement_fourni}` : ''}
+                      </small>
+                      {(visite.ordonnance || visite.facture) && (
+                        <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                          {visite.facture    && <span style={s.badge}>Facture</span>}
+                          {visite.ordonnance && <span style={s.badge}>Ordonnance</span>}
+                        </div>
+                      )}
+                    </div>
+                    {/* Actions */}
+                    <div style={s.visitActions}>
+                      <span style={s.chipCompleted}>
+                        <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--info)', display: 'inline-block' }}/>
+                        Complété
+                      </span>
+                      <button style={s.btnGhost} onClick={() => openDrawer(visite)}>Détails</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 
@@ -206,7 +223,7 @@ function MyVisits() {
           position: 'fixed', inset: 0,
           background: '#1a201f55',
           backdropFilter: 'blur(4px)',
-          zIndex: 50,
+          zIndex: 150,
           opacity: selected ? 1 : 0,
           pointerEvents: selected ? 'auto' : 'none',
           transition: 'opacity 0.2s',
@@ -219,7 +236,7 @@ function MyVisits() {
         position: 'fixed', top: 0, right: 0, bottom: 0,
         width: '520px', maxWidth: '94vw',
         background: 'var(--bg)',
-        zIndex: 51,
+        zIndex: 160,
         transform: selected ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 0.3s cubic-bezier(.3,.7,.2,1)',
         display: 'flex', flexDirection: 'column',
@@ -403,24 +420,61 @@ const s = {
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
-  card: {
-    background: 'var(--card)', border: '1px solid var(--line)',
-    borderRadius: 'var(--radius)', padding: '0 22px',
+  visitCard: {
+    display: 'grid',
+    gridTemplateColumns: 'auto auto 1fr auto',
+    gap: '20px',
+    padding: '18px 22px',
+    background: 'var(--card)',
+    border: '1px solid var(--line)',
+    borderRadius: 'var(--radius)',
+    marginBottom: '10px',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+    width: '100%',
   },
-  visitRow: {
-    display: 'grid', gridTemplateColumns: '90px 1fr auto',
-    gap: '20px', padding: '20px 0', alignItems: 'start',
+  visitDateCol: {
+    textAlign: 'center',
+    minWidth: '56px',
   },
-  visitDate: { paddingTop: '2px' },
+  visitDivider: {
+    width: '1px',
+    height: '44px',
+    background: 'var(--line)',
+  },
   visitDay: {
-    fontFamily: "'Fraunces', serif", fontSize: '28px', fontWeight: '400',
+    fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: '400',
     lineHeight: '1', letterSpacing: '-0.02em', color: 'var(--ink)',
   },
-  visitMonth: { fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-3)', marginTop: '2px' },
+  visitMonth: { fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: '2px' },
   visitYear:  { fontSize: '11px', color: 'var(--ink-3)', marginTop: '1px' },
-  visitTitle: { fontSize: '14px', fontWeight: '500', display: 'block', marginBottom: '3px', color: 'var(--ink)' },
-  visitMeta:  { color: 'var(--ink-3)', fontSize: '12.5px', display: 'block', marginBottom: '6px' },
-  visitDiag:  { color: 'var(--ink-2)', fontSize: '13px', margin: 0, lineHeight: '1.5' },
+  visitTitle: {
+    fontFamily: "'Fraunces', serif",
+    fontSize: '14.5px', fontWeight: '500', display: 'block',
+    marginBottom: '3px', color: 'var(--ink)',
+  },
+  visitMeta:  { color: 'var(--ink-3)', fontSize: '12.5px', display: 'block' },
+  visitActions: {
+    display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px',
+  },
+  chipCompleted: {
+    display: 'inline-flex', alignItems: 'center', gap: '6px',
+    padding: '3px 10px', borderRadius: '999px', fontSize: '11.5px', fontWeight: '500',
+    background: 'var(--info-soft)', color: 'var(--info)',
+  },
+  badge: {
+    display: 'inline-flex', alignItems: 'center',
+    padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '500',
+    background: 'var(--surface)', color: 'var(--ink-3)',
+    border: '1px solid var(--line)',
+  },
+  btnGhost: {
+    display: 'inline-flex', alignItems: 'center',
+    padding: '6px 11px', borderRadius: '8px',
+    fontSize: '12.5px', fontWeight: '500',
+    background: 'transparent', border: '1px solid var(--line-strong)',
+    color: 'var(--ink)', cursor: 'pointer', fontFamily: 'inherit',
+  },
   chip: {
     display: 'inline-flex', alignItems: 'center', gap: '6px',
     padding: '3px 10px', borderRadius: '999px', fontSize: '11.5px', fontWeight: '500',

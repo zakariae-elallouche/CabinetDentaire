@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
 
 const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
@@ -25,12 +26,36 @@ const STATUS_MAP = {
   cancelled:  { label: 'Annulé',     bg: 'var(--rose-soft)',    color: 'var(--rose)' },
   CONFIRMÉ:   { label: 'Confirmé',   bg: 'var(--accent-soft)',  color: 'var(--accent)' },
   EN_ATTENTE: { label: 'En attente', bg: 'var(--amber-soft)',   color: 'var(--gold)' },
-  COMPLÉTÉ:   { label: 'Complété',   bg: 'var(--success-soft)', color: 'var(--success)' },
+  COMPLÉTÉ:   { label: 'Complété',   bg: 'var(--info-soft)',    color: 'var(--info)' },
   ANNULÉ:     { label: 'Annulé',     bg: 'var(--rose-soft)',    color: 'var(--rose)' },
 }
 
-function Chip({ status }) {
+const STATUS_ICONS = {
+  EN_ATTENTE: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
+  EN_ATTENTE2: <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
+  pending:    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>,
+  CONFIRMÉ:   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>,
+  confirmed:  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>,
+  COMPLÉTÉ:   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>,
+  completed:  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 12 9 17 20 7"/></svg>,
+  ANNULÉ:     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>,
+  cancelled:  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg>,
+}
+
+function Chip({ status, isMobile }) {
   const s = STATUS_MAP[status] || { label: status, bg: 'var(--surface)', color: 'var(--ink-3)' }
+  const icon = STATUS_ICONS[status]
+  if (isMobile && icon) {
+    return (
+      <span title={s.label} style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 30, height: 30, borderRadius: '50%',
+        background: s.bg, color: s.color, flexShrink: 0,
+      }}>
+        {icon}
+      </span>
+    )
+  }
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -47,6 +72,7 @@ function Chip({ status }) {
 function PatientDashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
 
   const [nextRdv, setNextRdv]   = useState(null)
   const [stats, setStats]       = useState({ rdvAVenir: 0, factures: 0, ordonnances: 0, visites: 0 })
@@ -68,8 +94,17 @@ function PatientDashboard() {
         const rdvRes = await api.get('/rendez-vous')
         const rdvs = rdvRes.data || []
 
-        const upcoming = rdvs.filter(r => r.statut === 'CONFIRMÉ' || r.statut === 'EN_ATTENTE')
-          .sort((a, b) => parseLocalDate(a.date) - parseLocalDate(b.date))
+        const now = new Date()
+        const todayStr = now.toISOString().slice(0, 10)
+        const nowTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+        const upcoming = rdvs
+          .filter(r => {
+            if (r.statut !== 'CONFIRMÉ' && r.statut !== 'EN_ATTENTE') return false
+            if (r.date > todayStr) return true
+            if (r.date === todayStr) return (r.heure || '99:99') >= nowTime
+            return false
+          })
+          .sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')))
         const confirmed = rdvs.filter(r => r.statut === 'CONFIRMÉ')
 
         setNextRdv(upcoming[0] || null)
@@ -103,7 +138,7 @@ function PatientDashboard() {
       </p>
 
       {/* ── Hero + actions ── */}
-      <div style={s.dashHero}>
+      <div style={{ ...s.dashHero, gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr' }}>
 
         {/* Hero card — next appointment */}
         <div style={s.heroCard}>
@@ -202,7 +237,7 @@ function PatientDashboard() {
       </div>
 
       {/* ── Quick actions grid ── */}
-      <div style={s.quickGrid}>
+      <div style={{ ...s.quickGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)' }}>
         {quickActions.map(a => {
           const Ico = a.ico
           return (
@@ -241,7 +276,7 @@ function PatientDashboard() {
                   {rdv.duration || 30} min
                 </small>
               </div>
-              <Chip status={rdv.statut} />
+              <Chip status={rdv.statut} isMobile={isMobile} />
             </div>
           ))}
         </div>

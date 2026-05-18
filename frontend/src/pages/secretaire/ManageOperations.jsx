@@ -3,12 +3,14 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const IcoEdit = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
 const IcoSave = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
 const IcoX    = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 
 function ManageOperations() {
+  const isMobile = useIsMobile()
   const [operations, setOperations] = useState([])
   const [loading, setLoading]       = useState(true)
   const [editId, setEditId]         = useState(null)
@@ -52,7 +54,7 @@ function ManageOperations() {
             {operations.map(op => {
               const editing = editId === op.id
               return (
-                <div key={op.id} style={{ ...s.itemCard, ...(editing ? s.itemCardEditing : {}) }}>
+                <div key={op.id} style={{ ...s.itemCard, ...(editing ? s.itemCardEditing : {}), flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
 
                   {/* Icon */}
                   <div style={s.opIcon}>
@@ -68,7 +70,7 @@ function ManageOperations() {
                   </div>
 
                   {/* Cost + actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: isMobile ? 0 : 0, ...(isMobile ? { width: '100%', paddingTop: '8px', borderTop: '1px solid var(--line)', justifyContent: 'space-between' } : {}) }}>
                     {editing ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input
