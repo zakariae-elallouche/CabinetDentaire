@@ -3,15 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 
-const IcoPatient    = () => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
-const IcoSecretaire = () => <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><path d="M12 12v4M10 14h4"/></svg>
-const IcoDentiste   = () => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="22" height="22" fill="currentColor"><path d="M320 72C253.7 72 200 125.7 200 192C200 258.3 253.7 312 320 312C386.3 312 440 258.3 440 192C440 125.7 386.3 72 320 72zM380 384.8C374.6 384.3 369 384 363.4 384L276.5 384C270.9 384 265.4 384.3 259.9 384.8L259.9 452.3C276.4 459.9 287.9 476.6 287.9 495.9C287.9 522.4 266.4 543.9 239.9 543.9C213.4 543.9 191.9 522.4 191.9 495.9C191.9 476.5 203.4 459.8 219.9 452.3L219.9 393.9C157 417 112 477.6 112 548.6C112 563.7 124.3 576 139.4 576L500.5 576C515.6 576 527.9 563.7 527.9 548.6C527.9 477.6 482.9 417.1 419.9 394L419.9 431.4C443.2 439.6 459.9 461.9 459.9 488L459.9 520C459.9 531 450.9 540 439.9 540C428.9 540 419.9 531 419.9 520L419.9 488C419.9 477 410.9 468 399.9 468C388.9 468 379.9 477 379.9 488L379.9 520C379.9 531 370.9 540 359.9 540C348.9 540 339.9 531 339.9 520L339.9 488C339.9 461.9 356.6 439.7 379.9 431.4L379.9 384.8z"/></svg>
-
-const ROLES = [
-  { role: 'PATIENT',    Ico: IcoPatient,    label: 'Patient',    color: '#dfe9e6', iconColor: 'var(--accent)' },
-  { role: 'SECRETAIRE', Ico: IcoSecretaire, label: 'Secrétaire', color: '#f1e4cf', iconColor: 'var(--gold)' },
-  { role: 'DENTISTE',   Ico: IcoDentiste,   label: 'Dentiste',   color: '#dfe9e6', iconColor: 'var(--accent)' },
-]
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -40,16 +31,6 @@ function Login() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const loginAs = (role) => {
-    const creds = {
-      PATIENT: 'patient@clinic.ma',
-      SECRETAIRE: 'secretaire@clinic.ma',
-      DENTISTE: 'dentiste@clinic.ma',
-    }
-    setEmail(creds[role])
-    setPassword('password')
   }
 
   if (isMobile) return (
@@ -83,19 +64,6 @@ function Login() {
             {loading ? 'Connexion...' : 'Se connecter →'}
           </button>
         </form>
-
-        <div style={styles.divider}>
-          <span style={styles.dividerLine}/><span style={styles.dividerText}>Accès rapide</span><span style={styles.dividerLine}/>
-        </div>
-
-        <div style={styles.roleGrid}>
-          {ROLES.map(d => (
-            <button key={d.role} style={{ ...styles.roleBtn, background: d.color }} onClick={() => loginAs(d.role)}>
-              <span style={{ color: d.iconColor }}><d.Ico /></span>
-              <span style={styles.roleBtnLabel}>{d.label}</span>
-            </button>
-          ))}
-        </div>
 
         <p style={styles.switchText}>
           Pas encore de compte ?{' '}<Link to="/register" style={styles.link}>Créer un compte</Link>
@@ -199,25 +167,6 @@ function Login() {
               {loading ? 'Connexion...' : 'Se connecter →'}
             </button>
           </form>
-
-          <div style={styles.divider}>
-            <span style={styles.dividerLine}/>
-            <span style={styles.dividerText}>Accès rapide</span>
-            <span style={styles.dividerLine}/>
-          </div>
-
-          <div style={styles.roleGrid}>
-            {ROLES.map(d => (
-              <button
-                key={d.role}
-                style={{ ...styles.roleBtn, background: d.color }}
-                onClick={() => loginAs(d.role)}
-              >
-                <span style={{ color: d.iconColor }}><d.Ico /></span>
-                <span style={styles.roleBtnLabel}>{d.label}</span>
-              </button>
-            ))}
-          </div>
 
           <p style={styles.switchText}>
             Pas encore de compte ?{' '}
@@ -447,51 +396,11 @@ const styles = {
     letterSpacing: '0.02em',
     transition: 'all 0.15s',
   },
-  divider: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    margin: '1.75rem 0 1.25rem',
-  },
-  dividerLine: {
-    flex: 1,
-    height: '1px',
-    background: 'var(--line, #e3ddd0)',
-  },
-  dividerText: {
-    fontSize: '11.5px',
-    color: 'var(--ink-3, #7d8682)',
-    letterSpacing: '0.06em',
-    whiteSpace: 'nowrap',
-  },
-  roleGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    gap: '8px',
-    marginBottom: '1.5rem',
-  },
-  roleBtn: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '12px 8px',
-    border: '1px solid var(--line, #e3ddd0)',
-    borderRadius: '10px',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    transition: 'all 0.15s',
-  },
-  roleBtnLabel: {
-    fontSize: '12px',
-    fontWeight: '500',
-    color: 'var(--ink-2, #46504d)',
-  },
   switchText: {
     textAlign: 'center',
     fontSize: '13px',
     color: 'var(--ink-3, #7d8682)',
-    margin: 0,
+    margin: '1rem 0 0',
   },
   link: {
     color: 'var(--accent, #0f4842)',
