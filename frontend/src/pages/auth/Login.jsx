@@ -131,7 +131,7 @@ function Login() {
           </div>
 
           <div style={styles.formHeader}>
-            <h2 style={styles.formTitle}>Bon retour 👋</h2>
+            <h2 style={styles.formTitle}>Bon retour</h2>
             <p style={styles.formSub}>Connectez-vous à votre espace personnel</p>
           </div>
 

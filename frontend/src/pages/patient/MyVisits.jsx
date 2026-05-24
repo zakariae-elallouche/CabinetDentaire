@@ -18,18 +18,21 @@ const fmtDate = (dateStr) => {
 
 function MyVisits() {
   const isMobile = useIsMobile()
-  const [visits, setVisits]       = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(false)
-  const [search, setSearch]       = useState('')
-  const [selected, setSelected]   = useState(null)
-  const [activeTab, setActiveTab] = useState('facture')
+  const [visits, setVisits]         = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [error, setError]           = useState(false)
+  const [search, setSearch]         = useState('')
+  const [selected, setSelected]     = useState(null)
+  const [activeTab, setActiveTab]   = useState('facture')
+  const [patientName, setPatientName] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const meRes = await api.get('/me')
-        const patientId = meRes.data.profile.id
+        const profile = meRes.data.profile
+        const patientId = profile.id
+        setPatientName(`${profile.prenom || ''} ${profile.nom || ''}`.trim())
         const res = await api.get(`/patient/${patientId}/visites`)
         setVisits(res.data)
       } catch {
@@ -59,37 +62,129 @@ function MyVisits() {
   const downloadFacturePDF = async () => {
     const f = selected?.facture
     if (!f) return
-    const img = new Image(); img.src = '/HZPdf.jpg'
-    await new Promise(r => { img.onload = r; img.onerror = r })
-    const doc = new jsPDF()
-    if (img.complete && img.naturalWidth) doc.addImage(img, 'JPEG', 15, 5, 80, 33)
-    doc.setFontSize(12)
-    doc.setTextColor(50)
-    doc.text(`Facture N°: ${f.numero_facture || '—'}`, 20, 48)
-    doc.text(`Date: ${fmtDate(f.date_facture)}`, 20, 56)
-    doc.text(`Visite du: ${fmtDate(selected.date_visite)}`, 20, 64)
-    let y = 80
+
+    const loadImage = (src) => {
+      const img = new Image()
+      img.src = src
+      return new Promise(r => { img.onload = () => r(img); img.onerror = () => r(null) })
+    }
+
+    const [logoCircle, logoWater] = await Promise.all([
+      loadImage('/HZLogo-Border.png'),
+      loadImage('/HZLogo.png'),
+    ])
+
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+    const W = 210
+
+    if (logoCircle) doc.addImage(logoCircle, 'PNG', 12, 8, 28, 28)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(26)
+    doc.setTextColor(15, 72, 66)
+    doc.text('HZ Dentaire', 46, 22)
+
+    doc.setFont('helvetica', 'italic')
     doc.setFontSize(13)
-    doc.text('Détail:', 20, y)
-    y += 10
-    doc.setFontSize(11)
+    doc.setTextColor(80, 105, 100)
+    doc.text('Cabinet Dentaire', 46, 31)
+
+    doc.setDrawColor(15, 72, 66)
+    doc.setLineWidth(0.6)
+    doc.line(12, 41, W - 12, 41)
+
+    if (logoWater) {
+      try {
+        doc.saveGraphicsState()
+        doc.setGState(new doc.GState({ opacity: 0.07 }))
+        doc.addImage(logoWater, 'PNG', 55, 105, 100, 100)
+        doc.restoreGraphicsState()
+      } catch (_) {}
+    }
+
+    const LX = 15
+    const VX = 58
+    let y = 56
+
+    const field = (label, value) => {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      doc.setTextColor(15, 72, 66)
+      doc.text(`${label}:`, LX, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(25, 25, 25)
+      doc.text(String(value || '—'), VX, y)
+      y += 14
+    }
+
+    const dentiste = selected?.dentiste
+    const dentisteName = dentiste ? `${dentiste.prenom || ''} ${dentiste.nom || ''}`.trim() : '—'
+
+    field('Facture N°', f.numero_facture)
+    field('Patient',    patientName || '—')
+    field('Dentiste',   `Dr. ${dentisteName}`)
+    field('Date',       fmtDate(f.date_facture))
+
+    y += 4
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Détail:', LX, y)
+    y += 11
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(12)
+    doc.setTextColor(25, 25, 25)
+
     const fraisBase = parseFloat(f.frais_visite_base || 0)
     if (fraisBase > 0) {
-      doc.text('Frais de visite de base', 25, y)
-      doc.text(`${fraisBase.toFixed(2)} MAD`, 160, y)
-      y += 10
+      doc.text('Frais de visite de base', LX + 4, y)
+      doc.text(`${fraisBase.toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+      y += 9
     }
+
     ;(selected.operations || []).forEach(op => {
-      doc.text(`• ${op.nom_operation || op.nom || '—'}`, 25, y)
-      doc.text(`${parseFloat(op.cout).toFixed(2)} MAD`, 160, y)
-      y += 10
+      doc.text(`•  ${op.nom_operation || op.nom || '—'}`, LX + 4, y)
+      doc.text(`${parseFloat(op.cout || 0).toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+      y += 9
     })
-    y += 5
-    doc.line(20, y, 190, y)
-    y += 8
+
+    y += 4
+    doc.setDrawColor(15, 72, 66)
+    doc.setLineWidth(0.4)
+    doc.line(LX, y, W - 14, y)
+    y += 9
+
+    doc.setFont('helvetica', 'bold')
     doc.setFontSize(13)
-    doc.text('Total:', 130, y)
-    doc.text(`${parseFloat(f.montant_total || 0).toFixed(2)} MAD`, 160, y)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Total:', LX, y)
+    doc.setTextColor(25, 25, 25)
+    doc.text(`${parseFloat(f.montant_total || 0).toFixed(2)} MAD`, W - 14, y, { align: 'right' })
+
+    y += 10
+    const statut = f.statut === 'payee' ? 'PAYÉE' : 'EN ATTENTE'
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(f.statut === 'payee' ? 15 : 150, f.statut === 'payee' ? 72 : 100, f.statut === 'payee' ? 66 : 30)
+    doc.text(`Statut: ${statut}`, LX, y)
+
+    const sigX1 = W - 78
+    const sigX2 = W - 14
+    const sigY  = 265
+    doc.setDrawColor(40, 40, 40)
+    doc.setLineWidth(0.3)
+    doc.line(sigX1, sigY, sigX2, sigY)
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(15, 72, 66)
+    doc.text('Signature', (sigX1 + sigX2) / 2, sigY + 7, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(12)
+    doc.setTextColor(40, 40, 40)
+    doc.text('Hz', (sigX1 + sigX2) / 2, sigY + 13, { align: 'center' })
+
     doc.save(`${f.numero_facture || 'facture'}.pdf`)
   }
 

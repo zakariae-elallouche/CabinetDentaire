@@ -118,7 +118,7 @@ class VisiteController extends Controller
             if ((int)$id !== $patientId) abort(403);
         }
 
-        $visites = Visite::with(['facture', 'operations', 'ordonnance.medicaments.medicament'])->where('patient_id', $id)->orderByDesc('date_visite')->get();
+        $visites = Visite::with(['facture', 'operations', 'ordonnance.medicaments.medicament', 'dentiste'])->where('patient_id', $id)->orderByDesc('date_visite')->get();
 
         return response()->json($visites);
     }

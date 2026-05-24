@@ -189,7 +189,7 @@ function PatientDetailView() {
         <div style={{ ...s.detailGrid, gridTemplateColumns: isMobile ? '1fr' : '280px 1fr' }}>
 
           {/* ── Left: profile ── */}
-          <div>
+          <div style={{ position: 'sticky', top: '16px' }}>
             <div style={s.card}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
                 <div style={{ ...s.avatar, width: '52px', height: '52px', fontSize: '18px' }}>
@@ -252,6 +252,7 @@ function PatientDetailView() {
                 >{t.label}</button>
               ))}
             </div>
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 310px)', paddingRight: '4px' }}>
 
             {/* RDV */}
             {activeTab === 'rdv' && (
@@ -365,6 +366,7 @@ function PatientDetailView() {
                 )
               })
             )}
+            </div>
           </div>
         </div>
       </div>

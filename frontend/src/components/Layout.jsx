@@ -23,6 +23,7 @@ function Layout({ children }) {
 
   useEffect(() => {
     const h = () => setIsMobile(window.innerWidth < 768)
+    h()
     window.addEventListener('resize', h)
     return () => window.removeEventListener('resize', h)
   }, [])
@@ -203,7 +204,7 @@ function Layout({ children }) {
 
   /* ─── DESKTOP LAYOUT ─── */
   return (
-    <div style={{ minHeight: '100vh', display: 'grid', gridTemplateColumns: collapsed ? '64px 1fr' : '260px 1fr', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', width: '100%', display: 'grid', gridTemplateColumns: collapsed ? '64px 1fr' : '260px 1fr', background: 'var(--bg)' }}>
 
       {/* ─── Sidebar ─── */}
       <div style={{

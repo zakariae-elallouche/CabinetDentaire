@@ -91,9 +91,7 @@ function Register() {
 
       {/* Logo top-left */}
       <div style={styles.logoTop} className="auth-logo-top">
-        <div style={styles.logoBox}>
-          <span style={styles.logoHZ}>HZ</span>
-        </div>
+        <img src="/HZLogo.png" alt="HZ" style={{ width: 46, height: 46, objectFit: 'contain', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
         <div>
           <div style={styles.logoName}>HZ Dentaire</div>
           <div style={styles.logoSub}>Cabinet Dentaire</div>
@@ -140,7 +138,7 @@ function Register() {
           </div>
 
           <div style={styles.formHeader}>
-            <h2 style={styles.formTitle}>Créer un compte 🦷</h2>
+            <h2 style={styles.formTitle}>Créer un compte</h2>
             <p style={styles.formSub}>Remplissez vos informations personnelles</p>
           </div>
 
