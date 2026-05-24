@@ -1,5 +1,14 @@
 # HZ Dentaire — Application de Gestion de Cabinet Dentaire
 
+## Réalisé par
+
+| Nom | Prénom |
+|-----|--------|
+| EL ALLOUCHE | Zakariae |
+| EL ABED | Habiba |
+
+---
+
 Application web full-stack de gestion d'un cabinet dentaire, développée dans le cadre d'un projet académique. Elle couvre l'ensemble du flux clinique : prise de rendez-vous, consultations, ordonnances et facturation, avec trois rôles utilisateurs distincts.
 
 ---
