@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_FR = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc']
 const fmtDate = (str) => {
@@ -38,8 +40,17 @@ function PatientsListView() {
     return fullName(p).toLowerCase().includes(q) || p.telephone?.includes(search)
   })
 
+  if (loading) return (
+    <Layout>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>
+        <DonutLoader />
+      </div>
+    </Layout>
+  )
+
   return (
     <Layout>
+      <AnimateIn>
       <div>
         <div style={{ marginBottom: '28px' }}>
           <h1 style={s.pageTitle}>
@@ -68,53 +79,45 @@ function PatientsListView() {
           </span>
         </div>
 
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', fontSize: '14px' }}>Chargement...</p>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState title="Aucun patient trouvé" sub="Essayez un autre terme de recherche." />
         ) : (
-          <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-            {filtered.map(p => (
-              <div key={p.id} style={s.patientCard} onClick={() => navigate(`/secretaire/patient/${p.id}`)}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
-                  <div style={s.avatar}>{initials(p)}</div>
-                  <div style={{ overflow: 'hidden' }}>
-                    <div style={s.patientName}>{fullName(p)}</div>
-                    <div style={s.patientMeta}>#{String(p.id).padStart(4, '0')}</div>
-                  </div>
-                </div>
-
-                <div style={s.infoRow}>
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.21 3.18 2 2 0 0 1 3.22 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.09a16 16 0 0 0 5.83 5.83l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                  </svg>
-                  <span style={s.infoText}>{p.telephone || '—'}</span>
-                </div>
-
-                {p.date_naissance && (
-                  <div style={s.infoRow}>
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
-                      <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>
-                    </svg>
-                    <span style={s.infoText}>{fmtDate(p.date_naissance)}</span>
-                  </div>
-                )}
-
-                {p.adresse && (
-                  <div style={s.infoRow}>
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--ink-3)', flexShrink: 0 }}>
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/>
-                    </svg>
-                    <span style={{ ...s.infoText, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.adresse}</span>
-                  </div>
-                )}
-
-                <div style={s.viewBtn}>Voir dossier →</div>
-              </div>
-            ))}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>#</th>
+                  <th style={s.th}>Nom complet</th>
+                  <th style={s.th}>Téléphone</th>
+                  <th style={s.th}>Date naissance</th>
+                  <th style={s.th}>Adresse</th>
+                  <th style={{ ...s.th, textAlign: 'right' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(p => (
+                  <tr key={p.id} style={s.tr} onClick={() => navigate(`/secretaire/patient/${p.id}`)}>
+                    <td style={s.td}><span style={s.idBadge}>#{String(p.id).padStart(4, '0')}</span></td>
+                    <td style={s.td}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={s.avatar}>{initials(p)}</div>
+                        <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{fullName(p)}</span>
+                      </div>
+                    </td>
+                    <td style={s.td}>{p.telephone || '—'}</td>
+                    <td style={s.td}>{fmtDate(p.date_naissance)}</td>
+                    <td style={{ ...s.td, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.adresse || '—'}</td>
+                    <td style={{ ...s.td, textAlign: 'right' }}>
+                      <span style={s.viewLink}>Voir dossier →</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
@@ -155,7 +158,7 @@ function PatientDetailView() {
 
   if (loading) return (
     <Layout>
-      <p style={{ color: 'var(--ink-3)', fontSize: '14px', padding: '40px 0' }}>Chargement...</p>
+      <p style={{ color: 'var(--ink-3)', fontSize: '14px', padding: '40px 0' }}><DonutLoader /></p>
     </Layout>
   )
 
@@ -175,6 +178,7 @@ function PatientDetailView() {
 
   return (
     <Layout>
+      <AnimateIn>
       <div>
         <button style={s.backBtn} onClick={() => navigate('/secretaire/patients')}>
           ← Retour aux patients
@@ -263,7 +267,7 @@ function PatientDetailView() {
                   <div key={rdv.id} style={s.card}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontFamily: '"Geist Mono", monospace', fontSize: '14px', fontWeight: '500', color: 'var(--ink)' }}>
+                        <div style={{ fontFamily: '"Inter", sans-serif', fontSize: '14px', fontWeight: '500', color: 'var(--ink)' }}>
                           {rdv.heure?.slice(0, 5)?.replace(':', 'h')}
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--ink-3)', marginTop: '2px' }}>{rdv.date}</div>
@@ -289,7 +293,7 @@ function PatientDetailView() {
                       <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--ink)' }}>{visite.diagnostic}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: '"Geist Mono", monospace', fontWeight: '600', fontSize: '15px', color: 'var(--accent)' }}>
+                      <div style={{ fontFamily: '"Inter", sans-serif', fontWeight: '600', fontSize: '15px', color: 'var(--accent)' }}>
                         {visite.facture?.montant_total ?? '—'} MAD
                       </div>
                       <span style={{ ...s.badge, ...(visite.facture?.statut === 'payee' ? { background: '#d1fae5', color: '#065f46' } : { background: '#fef3c7', color: '#92400e' }) }}>
@@ -356,7 +360,7 @@ function PatientDetailView() {
                         <div style={{ fontSize: '12px', color: 'var(--ink-3)', marginTop: '2px' }}>{fmtDate(f.date_facture || f.created_at)}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: '"Geist Mono", monospace', fontSize: '15px', fontWeight: '600', color: 'var(--ink)' }}>{f.montant_total} MAD</div>
+                        <div style={{ fontFamily: '"Inter", sans-serif', fontSize: '15px', fontWeight: '600', color: 'var(--ink)' }}>{f.montant_total} MAD</div>
                         <span style={{ ...s.badge, ...(paid ? { background: '#d1fae5', color: '#065f46' } : { background: '#fef3c7', color: '#92400e' }) }}>
                           {paid ? 'Payée' : 'À régler'}
                         </span>
@@ -370,6 +374,7 @@ function PatientDetailView() {
           </div>
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
@@ -394,7 +399,7 @@ const chipStyle = (statut) => {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
@@ -404,10 +409,32 @@ const s = {
     fontSize: '13.5px', background: 'var(--card)', color: 'var(--ink)',
     outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
   },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-    gap: '16px',
+  table: {
+    width: '100%', borderCollapse: 'collapse',
+    background: 'var(--card)', borderRadius: '12px',
+    overflow: 'hidden', fontSize: '13px',
+  },
+  th: {
+    textAlign: 'left', padding: '12px 14px',
+    fontSize: '11px', fontWeight: '600', textTransform: 'uppercase',
+    letterSpacing: '0.08em', color: 'var(--ink-3)',
+    background: 'var(--surface)', borderBottom: '1px solid var(--line)',
+    whiteSpace: 'nowrap',
+  },
+  tr: {
+    cursor: 'pointer', transition: 'background 0.1s',
+    borderBottom: '1px solid var(--line)',
+  },
+  td: {
+    padding: '12px 14px', color: 'var(--ink-2)', verticalAlign: 'middle',
+  },
+  idBadge: {
+    fontFamily: '"Inter", sans-serif', fontSize: '12px',
+    fontWeight: '500', color: 'var(--ink-3)',
+  },
+  viewLink: {
+    fontSize: '12.5px', fontWeight: '500', color: 'var(--accent)',
+    whiteSpace: 'nowrap',
   },
   detailGrid: {
     display: 'grid',
@@ -420,36 +447,15 @@ const s = {
     borderRadius: 'var(--radius)', padding: '40px',
     display: 'flex', flexDirection: 'column', alignItems: 'center',
   },
-  patientCard: {
-    background: 'var(--card)', border: '1px solid var(--line)',
-    borderRadius: 'var(--radius)', padding: '20px',
-    cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
-  },
   card: {
     background: 'var(--card)', border: '1px solid var(--line)',
     borderRadius: 'var(--radius)', padding: '20px', marginBottom: '16px',
   },
   avatar: {
-    width: '42px', height: '42px', borderRadius: '50%', flexShrink: 0,
+    width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
     background: 'linear-gradient(135deg, var(--accent-soft, #c9d6d1), var(--accent))',
     display: 'grid', placeItems: 'center',
-    color: '#fff', fontWeight: '600', fontSize: '15px',
-  },
-  patientName: {
-    fontWeight: '600', fontSize: '14px', color: 'var(--ink)',
-    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-  },
-  patientMeta: { fontSize: '11.5px', color: 'var(--ink-3)', marginTop: '2px' },
-  infoRow: {
-    display: 'flex', alignItems: 'center', gap: '7px',
-    fontSize: '12.5px', color: 'var(--ink-2)', marginBottom: '6px',
-  },
-  infoText: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  viewBtn: {
-    marginTop: '14px', paddingTop: '12px',
-    borderTop: '1px solid var(--line)',
-    fontSize: '12.5px', fontWeight: '500',
-    color: 'var(--accent)', textAlign: 'right',
+    color: '#fff', fontWeight: '600', fontSize: '13px',
   },
   backBtn: {
     background: 'none', border: 'none', cursor: 'pointer',

@@ -26,7 +26,7 @@ export default function EmptyState({ title, sub }) {
         <IcoLoader />
       </div>
       <p style={{
-        fontFamily: "'Fraunces', serif", fontWeight: '400',
+        fontFamily: "'Inter', sans-serif", fontWeight: '400',
         fontSize: '19px', color: 'var(--ink)', margin: '0 0 6px',
         letterSpacing: '-0.01em',
       }}>{title}</p>

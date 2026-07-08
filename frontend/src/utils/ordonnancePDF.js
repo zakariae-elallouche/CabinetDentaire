@@ -15,7 +15,9 @@ const loadImage = (src) => {
   return new Promise(r => { img.onload = () => r(img); img.onerror = () => r(null) })
 }
 
-export async function generateOrdonnancePDF(p, patientName = '—') {
+export async function generateOrdonnancePDF(p, patientName) {
+  if (!patientName && p?.patient) patientName = `${p.patient.prenom || ''} ${p.patient.nom || ''}`.trim()
+  if (!patientName) patientName = '—'
   const [logoCircle, logoWater] = await Promise.all([
     loadImage('/HZLogo-Border.png'),
     loadImage('/HZLogo.png'),
@@ -71,7 +73,7 @@ export async function generateOrdonnancePDF(p, patientName = '—') {
   }
 
   field('Ordonnance',    `RX-${String(p.id).padStart(4, '0')}`)
-  field("Patient's Name", patientName)
+  field('Patient', patientName)
   field('Date',          fmtDate(p.date_delivrance))
   if (p.instructions_generales) field('Instructions', p.instructions_generales)
 

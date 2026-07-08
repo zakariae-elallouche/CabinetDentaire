@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Visite;
 
 class Facture extends Model
 {
-    public function patient() { return $this->belongsTo(Patient::class); }
-    public function visite()  { return $this->belongsTo(Visite::class); }
+    use BelongsToTenant;
 
     protected $fillable = [
+        'tenant_id',
         'numero_facture',
         'visite_id',
         'patient_id',
@@ -23,4 +23,7 @@ class Facture extends Model
         'date_paiement',
         'notes',
     ];
+
+    public function patient() { return $this->belongsTo(Patient::class); }
+    public function visite()  { return $this->belongsTo(Visite::class); }
 }

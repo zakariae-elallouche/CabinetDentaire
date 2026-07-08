@@ -22,7 +22,7 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message;
 
-    if (status === 401) {
+    if (status === 401 && !error.config.url.includes('/login')) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

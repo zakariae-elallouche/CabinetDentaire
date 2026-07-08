@@ -12,19 +12,45 @@ class OperationController extends Controller
         return response()->json(CatalogueOperation::all());
     }
 
-    public function update(Request $request, $id)
+    public function store(Request $request)
     {
-        if ($request->user()->role !== 'secretaire') {
-            abort(403);
-        }
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) abort(403);
 
         $request->validate([
-            'cout' => 'required|numeric|min:0',
+            'nom'         => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'cout'        => 'required|numeric|min:0',
+        ]);
+
+        $operation = CatalogueOperation::create(array_merge($request->only(['nom', 'description', 'cout']), [
+            'tenant_id' => tenant_id(),
+        ]));
+
+        return response()->json($operation, 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) abort(403);
+
+        $request->validate([
+            'nom'         => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'cout'        => 'sometimes|required|numeric|min:0',
         ]);
 
         $operation = CatalogueOperation::findOrFail($id);
-        $operation->update(['cout' => $request->cout]);
+        $operation->update($request->only(['nom', 'description', 'cout']));
 
         return response()->json($operation);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) abort(403);
+
+        CatalogueOperation::findOrFail($id)->delete();
+
+        return response()->json(['message' => 'Opération supprimée.']);
     }
 }

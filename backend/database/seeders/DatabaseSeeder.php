@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Tenant;
 use App\Models\Utilisateur;
 use App\Models\Patient;
 use App\Models\Secretaire;
@@ -15,45 +16,71 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(SuperAdminSeeder::class);
+
+        $tenant = Tenant::create([
+            'nom_clinique' => 'Clinique HZ Dentaire',
+            'slug'         => 'hz-dentaire',
+            'email_contact'=> 'contact@hz-dentaire.ma',
+            'telephone'    => '0522000000',
+            'adresse'      => '123 Avenue de la Liberté, Casablanca',
+            'ville'        => 'Casablanca',
+            'statut'       => 'actif',
+        ]);
+
         $patient = Utilisateur::create([
+            'tenant_id' => $tenant->id,
             'email'    => 'patient@clinic.ma',
             'password' => Hash::make('password'),
             'role'     => 'patient',
             'statut'   => 'actif',
+            'nom'      => 'Ben Ali',
+            'prenom'   => 'Karim',
         ]);
         Patient::create([
+            'tenant_id'        => $tenant->id,
             'utilisateur_id' => $patient->id,
-            'nom'            => 'Ben Ali',
-            'prenom'         => 'Karim',
             'telephone'      => '0600000001',
             'sexe'           => 'masculin',
         ]);
 
         $secretaire = Utilisateur::create([
+            'tenant_id' => $tenant->id,
             'email'    => 'secretaire@clinic.ma',
             'password' => Hash::make('password'),
             'role'     => 'secretaire',
             'statut'   => 'actif',
+            'nom'      => 'Moussaoui',
+            'prenom'   => 'Sara',
         ]);
         Secretaire::create([
+            'tenant_id'        => $tenant->id,
             'utilisateur_id' => $secretaire->id,
-            'nom'            => 'Moussaoui',
-            'prenom'         => 'Sara',
             'numero_employe' => 'SEC-001',
             'date_embauche'  => '2024-01-01',
         ]);
 
         $dentiste = Utilisateur::create([
+            'tenant_id' => $tenant->id,
             'email'    => 'dentiste@clinic.ma',
             'password' => Hash::make('password'),
             'role'     => 'dentiste',
             'statut'   => 'actif',
+            'nom'      => 'Alaoui',
+            'prenom'   => 'Youssef',
         ]);
         Dentiste::create([
+            'tenant_id'        => $tenant->id,
             'utilisateur_id' => $dentiste->id,
-            'nom'            => 'Alaoui',
-            'prenom'         => 'Youssef',
             'specialite'     => 'Orthodontie',
+        ]);
+
+        $admin = Utilisateur::create([
+            'tenant_id' => $tenant->id,
+            'email'    => 'admin@clinic.ma',
+            'password' => Hash::make('password'),
+            'role'     => 'admin_clinique',
+            'statut'   => 'actif',
         ]);
 
         $operations = [
@@ -100,6 +127,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($operations as $op) {
+            $op['tenant_id'] = $tenant->id;
             CatalogueOperation::create($op);
         }
 
@@ -112,6 +140,7 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($medicaments as $med) {
+            $med['tenant_id'] = $tenant->id;
             Medicament::create($med);
         }
     }

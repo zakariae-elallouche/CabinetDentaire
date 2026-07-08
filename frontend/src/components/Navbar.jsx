@@ -5,6 +5,16 @@ function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
+  const roleLabel = {
+    SUPERADMIN: 'Super Admin',
+    ADMIN_CLINIQUE: 'Admin Clinique',
+    DENTISTE: 'Docteur',
+    SECRETAIRE: 'Secrétaire',
+    PATIENT: 'Patient',
+  }
+
+  const displayName = user?.nom_complet || user?.nom || roleLabel[user?.role] || user?.email || ''
+
   // ─── Fonction déconnexion ───
   const handleLogout = () => {
     logout()
@@ -67,7 +77,7 @@ function Navbar() {
       {/* User info + Déconnexion */}
       <div style={styles.right}>
         <span style={styles.userName}>
-          👤 {user?.nom || user?.nom_complet}
+          👤 {displayName}
         </span>
         <button onClick={handleLogout} style={styles.logoutBtn}>
           🚪 Déconnexion

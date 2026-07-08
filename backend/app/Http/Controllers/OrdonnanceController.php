@@ -7,6 +7,7 @@ use App\Models\OrdonnanceMedicament;
 use App\Models\Patient;
 use App\Models\Dentiste;
 use App\Services\AuditService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +39,7 @@ class OrdonnanceController extends Controller
                 'date_delivrance'        => today(),
                 'instructions_generales' => $request->instructions_generales,
                 'statut'                 => 'active',
+                'tenant_id'              => tenant_id(),
             ]);
 
             foreach ($request->medicaments as $med) {
@@ -47,8 +49,11 @@ class OrdonnanceController extends Controller
                     'frequence'              => $med['frequence'],
                     'duree_jours'            => $med['duree_jours'],
                     'instructions_speciales' => $med['instructions_speciales'] ?? null,
+                    'tenant_id'              => tenant_id(),
                 ]);
             }
+
+            NotificationService::ordonnanceDisponible($ordonnance);
 
             AuditService::log('create', 'ordonnances', $ordonnance->id, null, $ordonnance->toArray());
 

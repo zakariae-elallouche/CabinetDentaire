@@ -4,6 +4,8 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 function IssuePrescription() {
   const { visite_id } = useParams()
@@ -14,6 +16,7 @@ function IssuePrescription() {
   const [selectedMeds, setSelectedMeds] = useState([])
   const [instructions, setInstructions] = useState('')
   const [loading, setLoading] = useState(false)
+  const [dataLoading, setDataLoading] = useState(true)
 
   // Rediriger si pas de visite_id — l'ordonnance doit venir d'une visite enregistrée
   useEffect(() => {
@@ -24,7 +27,7 @@ function IssuePrescription() {
     }
     api.get('/medicaments')
       .then(res => setMedicaments(res.data))
-      .catch(() => {})
+      .catch(() => {}).finally(() => setDataLoading(false))
   }, [])
 
   const handleAddMed = (e) => {
@@ -61,8 +64,11 @@ function IssuePrescription() {
     finally { setLoading(false) }
   }
 
+  if (dataLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* Header */}
@@ -162,7 +168,7 @@ function IssuePrescription() {
                   <div key={med.id} style={{ padding: '12px 0', borderBottom: i < selectedMeds.length - 1 ? '1px dashed var(--line)' : 'none' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                       <b style={{ fontSize: '13.5px', color: 'var(--ink)' }}>{med.nom}</b>
-                      <span style={{ fontSize: '11px', color: 'var(--ink-3)', fontFamily: '"Geist Mono", monospace', flexShrink: 0, marginLeft: '8px' }}>{med.dosage}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--ink-3)', fontFamily: '"Inter", sans-serif', flexShrink: 0, marginLeft: '8px' }}>{med.dosage}</span>
                     </div>
                     <div style={{ display: 'flex', gap: '12px' }}>
                       <small style={{ color: med.frequence ? 'var(--accent)' : 'var(--ink-3)', fontSize: '12px' }}>
@@ -194,13 +200,14 @@ function IssuePrescription() {
 
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
@@ -210,7 +217,7 @@ const s = {
     borderRadius: 'var(--radius)', padding: '24px', marginBottom: '16px',
   },
   cardTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '17px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '17px',
     color: 'var(--ink)', margin: '0 0 20px',
   },
   formGroup: { marginBottom: '16px' },
@@ -233,7 +240,7 @@ const s = {
   infoBadge: {
     padding: '11px 14px', borderRadius: '10px',
     border: '1px solid var(--line)', background: 'var(--surface)',
-    fontSize: '13.5px', color: 'var(--ink-2)', fontFamily: '"Geist Mono", monospace',
+    fontSize: '13.5px', color: 'var(--ink-2)', fontFamily: '"Inter", sans-serif',
   },
   emptyMeds: {
     textAlign: 'center', padding: '2rem',

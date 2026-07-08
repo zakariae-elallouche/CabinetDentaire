@@ -16,7 +16,7 @@ return new class extends Migration
             $table->datetime('date_heure');
             $table->integer('duree')->default(30);
             $table->text('raison')->nullable();
-            $table->enum('statut', ['en_attente', 'confirme', 'annule', 'complete'])->default('en_attente');
+            $table->string('statut')->default('en_attente');
             $table->text('notes')->nullable();
             $table->datetime('cree_le')->useCurrent();
             $table->datetime('confirme_le')->nullable();

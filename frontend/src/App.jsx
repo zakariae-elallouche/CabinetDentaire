@@ -4,6 +4,26 @@ import ProtectedRoute from './components/ProtectedRoute'
 // ─── Auth ───
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import RegisterClinic from './pages/auth/RegisterClinic'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+
+// ─── Shared ───
+import SubscriptionBlocked from './pages/shared/SubscriptionBlocked'
+
+// ─── Admin ───
+import AdminDashboard from './pages/admin/AdminDashboard'
+import ManageTeam from './pages/admin/ManageTeam'
+import BillingPage from './pages/admin/BillingPage'
+import ParametresClinique from './pages/admin/ParametresClinique'
+import GestionCatalogueOperations from './pages/admin/GestionCatalogueOperations'
+import GestionMedicaments from './pages/admin/GestionMedicaments'
+import MonCompte from './pages/shared/MonCompte'
+
+// ─── Super Admin ───
+import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
+import SuperAdminTenants from './pages/superadmin/SuperAdminTenants'
+import SuperAdminTenantDetail from './pages/superadmin/SuperAdminTenantDetail'
 
 // ─── Patient ───
 import PatientDashboard from './pages/patient/PatientDashboard'
@@ -18,8 +38,7 @@ import MyProfile from './pages/patient/MyProfile'
 import SecretaireDashboard from './pages/secretaire/SecretaireDashboard'
 import ManageAppointments from './pages/secretaire/ManageAppointments'
 import ManagePayments from './pages/secretaire/ManagePayments'
-import ManageMedications from './pages/secretaire/ManageMedications'
-import ManageOperations from './pages/secretaire/ManageOperations'
+
 import PatientsList from './pages/secretaire/PatientsList'
 
 // ─── Dentiste ───
@@ -40,7 +59,64 @@ function App() {
         {/* ─── Auth ─── */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/register-clinic" element={<RegisterClinic />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/subscription-blocked" element={<SubscriptionBlocked />} />
 
+        {/* ─── Admin ─── */}
+        <Route path="/admin/dashboard" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/equipe" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <ManageTeam />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/facturation" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <BillingPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/compte" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <MonCompte />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/parametres" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <ParametresClinique />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/catalogue-operations" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <GestionCatalogueOperations />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/medicaments" element={
+          <ProtectedRoute roles={['ADMIN_CLINIQUE']}>
+            <GestionMedicaments />
+          </ProtectedRoute>
+        } />
+
+        {/* ─── Super Admin ─── */}
+        <Route path="/superadmin/dashboard" element={
+          <ProtectedRoute roles={['SUPERADMIN']}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/superadmin/tenants" element={
+          <ProtectedRoute roles={['SUPERADMIN']}>
+            <SuperAdminTenants />
+          </ProtectedRoute>
+        } />
+        <Route path="/superadmin/tenants/:id" element={
+          <ProtectedRoute roles={['SUPERADMIN']}>
+            <SuperAdminTenantDetail />
+          </ProtectedRoute>
+        } />
         {/* ─── Patient ─── */}
         <Route path="/patient/dashboard" element={
           <ProtectedRoute roles={['PATIENT']}>
@@ -78,40 +154,36 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* ─── Secretaire ─── */}
+        {/* ─── Secretaire + Admin clinique ─── */}
         <Route path="/secretaire/dashboard" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
             <SecretaireDashboard />
           </ProtectedRoute>
         } />
         <Route path="/secretaire/rendez-vous" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
             <ManageAppointments />
           </ProtectedRoute>
         } />
         <Route path="/secretaire/paiements" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
             <ManagePayments />
           </ProtectedRoute>
         } />
-        <Route path="/secretaire/medicaments" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
-            <ManageMedications />
-          </ProtectedRoute>
-        } />
-        <Route path="/secretaire/operations" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
-            <ManageOperations />
-          </ProtectedRoute>
-        } />
+
         <Route path="/secretaire/patients" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
             <PatientsList />
           </ProtectedRoute>
         } />
         <Route path="/secretaire/patient/:id" element={
-          <ProtectedRoute roles={['SECRETAIRE']}>
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
             <PatientsList />
+          </ProtectedRoute>
+        } />
+        <Route path="/secretaire/compte" element={
+          <ProtectedRoute roles={['SECRETAIRE', 'ADMIN_CLINIQUE']}>
+            <MonCompte />
           </ProtectedRoute>
         } />
 
@@ -154,6 +226,11 @@ function App() {
         <Route path="/dentiste/patients" element={
           <ProtectedRoute roles={['DENTISTE']}>
             <PatientHistory />
+          </ProtectedRoute>
+        } />
+        <Route path="/dentiste/compte" element={
+          <ProtectedRoute roles={['DENTISTE']}>
+            <MonCompte />
           </ProtectedRoute>
         } />
 

@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useIsMobile } from '../hooks/useIsMobile'
+import { getEcho, disconnectEcho } from '../echo'
 
 const IcoBell = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -16,10 +18,16 @@ const IcoCheck = () => (
 )
 
 const typeColor = (type) => {
-  if (type === 'rdv_confirme')  return { bg: 'var(--accent-soft)',   dot: 'var(--accent)' }
-  if (type === 'rdv_rejete')    return { bg: 'var(--rose-soft)',     dot: 'var(--rose)' }
-  if (type === 'paiement_recu') return { bg: 'var(--success-soft)',  dot: 'var(--success)' }
-  if (type === 'rdv_demande')   return { bg: 'var(--amber-soft)',    dot: '#8d6a2b' }
+  if (type === 'rdv_confirme')       return { bg: 'var(--accent-soft)',   dot: '#4AB2BB' }
+  if (type === 'rdv_rejete')         return { bg: 'var(--rose-soft)',     dot: 'var(--rose)' }
+  if (type === 'paiement_recu')      return { bg: 'var(--success-soft)',  dot: 'var(--success)' }
+  if (type === 'rdv_demande')        return { bg: 'var(--amber-soft)',    dot: '#8d6a2b' }
+  if (type === 'facture_en_attente') return { bg: 'var(--amber-soft)',    dot: '#d97706' }
+  if (type === 'visite_complete')    return { bg: 'var(--accent-soft)',   dot: '#4AB2BB' }
+  if (type === 'ordonnance_disponible') return { bg: 'var(--accent-soft)', dot: '#6366f1' }
+  if (type === 'nouveau_patient')    return { bg: 'var(--success-soft)',  dot: '#10b981' }
+  if (type === 'rappel_visite')      return { bg: 'var(--accent-soft)',   dot: '#4AB2BB' }
+  if (type === 'nouveau_rdv_dentiste') return { bg: 'var(--amber-soft)',  dot: '#8d6a2b' }
   return { bg: 'var(--surface)', dot: 'var(--ink-3)' }
 }
 
@@ -34,29 +42,79 @@ const fmtTime = (dateStr) => {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ user }) {
   const [notifs, setNotifs]   = useState([])
   const [open, setOpen]       = useState(false)
   const ref                   = useRef(null)
   const isMobile              = useIsMobile()
+  const navigate             = useNavigate()
+
+  const handleClick = (n) => {
+    if (!n.lu) markRead(n.id)
+    let path = null
+    switch (n.type) {
+      case 'rdv_confirme':
+      case 'rdv_rejete':
+        if (user?.role === 'PATIENT') path = '/patient/rendez-vous'
+        break
+      case 'rdv_demande':
+        if (user?.role === 'SECRETAIRE' || user?.role === 'ADMIN_CLINIQUE') path = '/secretaire/rendez-vous'
+        break
+      case 'paiement_recu':
+      case 'facture_en_attente':
+        if (user?.role === 'PATIENT') path = '/patient/factures'
+        break
+      case 'facture_saas':
+        if (user?.role === 'ADMIN_CLINIQUE') path = '/admin/facturation'
+        break
+      case 'visite_complete':
+        if (user?.role === 'PATIENT') path = '/patient/visites'
+        break
+      case 'ordonnance_disponible':
+        if (user?.role === 'PATIENT') path = '/patient/ordonnances'
+        break
+      case 'nouveau_patient':
+        if (user?.role === 'SECRETAIRE' || user?.role === 'ADMIN_CLINIQUE') path = '/secretaire/patients'
+        break
+      case 'rappel_visite':
+        if (user?.role === 'PATIENT') path = '/patient/rendez-vous'
+        break
+      case 'nouveau_rdv_dentiste':
+        if (user?.role === 'DENTISTE') path = '/dentiste/agenda'
+        break
+    }
+    if (path) { setOpen(false); navigate(path) }
+  }
 
   const unread = notifs.filter(n => !n.lu).length
 
+  const fetchNotifs = useCallback(() => {
+    api.get('/notifications').then(res => setNotifs(res.data)).catch(() => {})
+  }, [])
+
   useEffect(() => {
     fetchNotifs()
-    const interval = setInterval(fetchNotifs, 30000)
-    return () => clearInterval(interval)
-  }, [])
+
+    if (!user?.id) return
+
+    const echo = getEcho()
+    const channel = echo.private(`notifications.${user.id}`)
+
+    channel.listen('.NewNotification', (e) => {
+      setNotifs(prev => [e.notification, ...prev])
+    })
+
+    return () => {
+      channel.stopListening('.NewNotification')
+      echo.leave(`notifications.${user.id}`)
+    }
+  }, [user?.id, fetchNotifs])
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
-
-  const fetchNotifs = () => {
-    api.get('/notifications').then(res => setNotifs(res.data)).catch(() => {})
-  }
 
   const markRead = (id) => {
     api.patch(`/notifications/${id}/read`).then(() => {
@@ -74,14 +132,14 @@ export default function NotificationBell() {
     <div ref={ref} style={{ position: 'relative' }}>
       {/* Bell button */}
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen(o => { if (!o) fetchNotifs(); return !o })}
         style={{
           position: 'relative',
           width: '36px', height: '36px',
           borderRadius: '10px',
           border: '1px solid var(--line)',
           background: open ? 'var(--accent-soft)' : 'var(--card)',
-          color: open ? 'var(--accent)' : 'var(--ink-2)',
+          color: open ? '#4AB2BB' : 'var(--ink-2)',
           cursor: 'pointer',
           display: 'grid', placeItems: 'center',
           transition: 'all 0.15s',
@@ -134,7 +192,7 @@ export default function NotificationBell() {
             borderBottom: '1px solid var(--line)',
             display: 'flex', alignItems: 'center', gap: '8px',
           }}>
-            <span style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--ink)', flex: 1 }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--ink)', flex: 1 }}>
               Notifications
             </span>
             {unread > 0 && (
@@ -145,7 +203,7 @@ export default function NotificationBell() {
             {unread > 0 && (
               <button
                 onClick={markAllRead}
-                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: '6px', fontFamily: 'inherit' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', color: '#4AB2BB', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: '6px', fontFamily: 'inherit' }}
               >
                 <IcoCheck /> Tout lire
               </button>
@@ -159,7 +217,7 @@ export default function NotificationBell() {
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--surface)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', color: 'var(--ink-3)', margin: '0 auto 12px' }}>
                   <IcoBell />
                 </div>
-                <p style={{ margin: 0, fontFamily: "'Fraunces', serif", fontSize: '15px', color: 'var(--ink)' }}>Aucune notification</p>
+                <p style={{ margin: 0, fontFamily: "'Inter', sans-serif", fontSize: '15px', color: 'var(--ink)' }}>Aucune notification</p>
                 <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: 'var(--ink-3)' }}>Vous êtes à jour.</p>
               </div>
             ) : notifs.map((n, i) => {
@@ -167,15 +225,17 @@ export default function NotificationBell() {
               return (
                 <div
                   key={n.id}
-                  onClick={() => !n.lu && markRead(n.id)}
+                  onClick={() => handleClick(n)}
                   style={{
                     display: 'flex', gap: '12px',
                     padding: '13px 18px',
                     borderBottom: i < notifs.length - 1 ? '1px solid var(--line)' : 'none',
                     background: n.lu ? 'transparent' : 'var(--accent-soft)',
-                    cursor: n.lu ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'background 0.15s',
                   }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
+                  onMouseLeave={e => e.currentTarget.style.background = n.lu ? 'transparent' : 'var(--accent-soft)'}
                 >
                   {/* Dot */}
                   <div style={{ paddingTop: '3px', flexShrink: 0 }}>

@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const FILTERS = [
   { key: '', label: 'Tous' },
@@ -94,8 +96,17 @@ function ManageAppointments() {
     return `${DAYS[dt.getDay()]}. ${+d} ${MONTHS[+m - 1]}`
   }
 
+  if (loading) {
+    return (
+      <Layout>
+        <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div>
+      </Layout>
+    )
+  }
+
   return (
     <Layout>
+      <AnimateIn>
       <div>
         {/* Header */}
         <div style={{ marginBottom: '28px' }}>
@@ -136,9 +147,7 @@ function ManageAppointments() {
         </div>
 
         {/* List */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', padding: '2rem 0' }}>Chargement...</p>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState title="Aucun rendez-vous" sub="Essayez un autre filtre." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -188,6 +197,7 @@ function ManageAppointments() {
           </div>
         )}
       </div>
+      </AnimateIn>
 
       {/* Overlay */}
       <div style={{ position: 'fixed', inset: 0, background: '#1a201f55', backdropFilter: 'blur(4px)', zIndex: 50, opacity: rejectModal ? 1 : 0, pointerEvents: rejectModal ? 'auto' : 'none', transition: 'opacity 0.2s' }}
@@ -221,11 +231,11 @@ function ManageAppointments() {
 }
 
 const s = {
-  pageTitle: { fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: 1.1 },
+  pageTitle: { fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: 1.1 },
   pageSub:   { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
   filterPill: { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: '450', fontFamily: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink-2)', cursor: 'pointer', whiteSpace: 'nowrap' },
   filterPillActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff', fontWeight: '500' },
-  filterBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '18px', height: '18px', padding: '0 5px', borderRadius: '999px', fontSize: '11px', fontFamily: '"Geist Mono", monospace', fontWeight: '500' },
+  filterBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '18px', height: '18px', padding: '0 5px', borderRadius: '999px', fontSize: '11px', fontFamily: '"Inter", sans-serif', fontWeight: '500' },
   searchWrap: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '999px', border: '1px solid var(--line)', background: 'var(--card)', flex: 1, maxWidth: '280px', color: 'var(--ink-3)' },
   searchInput: { border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: 'var(--ink)', fontFamily: 'inherit', flex: 1, minWidth: 0 },
   clearBtn: { background: 'none', border: 'none', color: 'var(--ink-3)', cursor: 'pointer', padding: 0, fontSize: '13px' },
@@ -233,10 +243,10 @@ const s = {
   emptyIcon: { width: '64px', height: '64px', borderRadius: '16px', background: 'var(--surface)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', marginBottom: '16px' },
   itemCard: { display: 'grid', gridTemplateColumns: 'auto auto 1fr auto', gap: '20px', padding: '16px 20px', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', alignItems: 'center' },
   timeBlock: { textAlign: 'center', minWidth: '72px' },
-  timeHour: { fontFamily: '"Geist Mono", monospace', fontSize: '18px', fontWeight: '500', color: 'var(--ink)', display: 'block', letterSpacing: '-0.02em' },
+  timeHour: { fontFamily: '"Inter", sans-serif', fontSize: '18px', fontWeight: '500', color: 'var(--ink)', display: 'block', letterSpacing: '-0.02em' },
   timeDate: { fontSize: '10.5px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginTop: '2px' },
   divider: { width: '1px', height: '36px', background: 'var(--line)' },
-  patientName: { fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Fraunces', serif", display: 'block', marginBottom: '2px' },
+  patientName: { fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: '2px' },
   patientMeta: { fontSize: '12px', color: 'var(--ink-3)', display: 'block' },
   notes: { fontSize: '12.5px', color: 'var(--ink-3)', margin: '4px 0 0', fontStyle: 'italic' },
   actions: { display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 },
@@ -244,7 +254,7 @@ const s = {
   btnConfirm: { display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '500', background: 'var(--success-soft)', color: 'var(--success)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' },
   btnReject:  { display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '500', background: 'var(--rose-soft)', color: 'var(--rose)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' },
   modal: { background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: '28px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' },
-  modalTitle: { fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '20px', color: 'var(--ink)', margin: 0 },
+  modalTitle: { fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '20px', color: 'var(--ink)', margin: 0 },
   btnClose: { width: '32px', height: '32px', borderRadius: '8px', display: 'grid', placeItems: 'center', border: '1px solid var(--line)', background: 'var(--card)', cursor: 'pointer', fontSize: '13px', color: 'var(--ink-2)' },
   textarea: { width: '100%', padding: '10px 12px', border: '1px solid var(--line)', borderRadius: '8px', fontSize: '13.5px', outline: 'none', background: 'var(--surface)', boxSizing: 'border-box', fontFamily: 'inherit', color: 'var(--ink)', resize: 'vertical' },
   btnOutline: { display: 'inline-flex', alignItems: 'center', padding: '9px 16px', borderRadius: '10px', fontSize: '13.5px', fontWeight: '500', background: 'transparent', border: '1px solid var(--line)', color: 'var(--ink-2)', cursor: 'pointer', fontFamily: 'inherit' },

@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 
 class RendezVous extends Model
 {
+    use BelongsToTenant;
+
     protected $table = 'rendez_vous';
 
     protected $fillable = [
+        'tenant_id',
         'patient_id', 'dentiste_id', 'secretaire_id',
         'date_heure', 'duree', 'raison', 'statut', 'notes', 'confirme_le',
     ];
@@ -24,7 +28,6 @@ class RendezVous extends Model
         return $this->belongsTo(Dentiste::class);
     }
 
-    // Return frontend-friendly shape
     public function toFrontend(): array
     {
         $dt = Carbon::parse($this->date_heure);
@@ -44,8 +47,8 @@ class RendezVous extends Model
             'raison'   => $this->raison,
             'patient'  => $this->patient ? [
                 'id'        => $this->patient->id,
-                'nom'       => $this->patient->nom,
-                'prenom'    => $this->patient->prenom,
+                'nom'       => $this->patient->utilisateur?->nom,
+                'prenom'    => $this->patient->utilisateur?->prenom,
                 'telephone' => $this->patient->telephone,
             ] : null,
         ];

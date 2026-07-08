@@ -5,6 +5,8 @@ import Layout from '../../components/Layout'
 import { promptDialog } from '../../components/DialogProvider'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const IcoCal      = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
 const IcoReceipt  = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
@@ -84,16 +86,11 @@ function SecretaireDashboard() {
     { label: 'RDV ce mois',         value: stats.rdvCeMois,         bg: 'var(--success-soft)',color: 'var(--success)', Ico: IcoCal },
   ]
 
-  const SHORTCUTS = [
-    { label: 'Rendez-vous', sub: 'Gérer les demandes',   path: '/secretaire/rendez-vous', Ico: IcoCal },
-    { label: 'Paiements',   sub: 'Encaisser les factures',path: '/secretaire/paiements',   Ico: IcoReceipt },
-    { label: 'Médicaments', sub: 'Catalogue & stocks',    path: '/secretaire/medicaments', Ico: IcoPill },
-    { label: 'Opérations',  sub: 'Tarifs des actes',      path: '/secretaire/operations',  Ico: IcoSettings },
-    { label: 'Patients',    sub: 'Liste & dossiers',      path: '/secretaire/patients',    Ico: IcoUsers },
-  ]
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* Titre */}
@@ -101,7 +98,7 @@ function SecretaireDashboard() {
           <h1 style={styles.pageTitle}>
             Tableau de bord <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>Secrétaire</em>
           </h1>
-          <p style={styles.pageSub}>Gestion du cabinet dentaire</p>
+          <p style={styles.pageSub}>Gestion de la clinique dentaire</p>
         </div>
 
         {/* ─── Hero + Actions ─── */}
@@ -109,13 +106,11 @@ function SecretaireDashboard() {
         <div style={styles.heroCard}>
           <div style={styles.heroEyebrow}>VISITES DU JOUR</div>
 
-          {loading ? (
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Chargement...</p>
-          ) : rdvAujourdhui.length === 0 ? (
+          {rdvAujourdhui.length === 0 ? (
             <>
               <div style={styles.heroEmpty}>Aucune visite prévue aujourd'hui</div>
               <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
-                Le cabinet est libre — profitez-en pour organiser les dossiers.
+                La clinique est libre — profitez-en pour organiser les dossiers.
               </p>
             </>
           ) : (
@@ -183,17 +178,6 @@ function SecretaireDashboard() {
 
         </div>{/* end dashHero */}
 
-        {/* Raccourcis */}
-        <div style={{ ...styles.shortcutGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)' }}>
-          {SHORTCUTS.map(s => (
-            <button key={s.path} style={styles.shortcut} onClick={() => navigate(s.path)}>
-              <div style={styles.shortcutIcon}><s.Ico /></div>
-              <b style={styles.shortcutLabel}>{s.label}</b>
-              <small style={styles.shortcutSub}>{s.sub}</small>
-            </button>
-          ))}
-        </div>
-
         {/* RDV en attente */}
         <div style={styles.card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -206,15 +190,13 @@ function SecretaireDashboard() {
             </span>
           </div>
 
-          {loading ? (
-            <p style={{ color: 'var(--ink-3)' }}>Chargement...</p>
-          ) : rdvEnAttente.length === 0 ? (
+          {rdvEnAttente.length === 0 ? (
             <p style={{ color: 'var(--ink-3)' }}>Aucune demande en attente ✅</p>
           ) : (
             rdvEnAttente.map(rdv => (
               <div key={rdv.id} style={styles.rdvRow}>
                 <div style={{ flex: 1 }}>
-                  <b style={{ fontSize: '14px', color: 'var(--ink)', fontFamily: "'Fraunces', serif" }}>
+                  <b style={{ fontSize: '14px', color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>
                     {rdv.patient ? `${rdv.patient.prenom || ''} ${rdv.patient.nom || ''}`.trim() : '—'}
                   </b>
                   <div style={{ fontSize: '12.5px', color: 'var(--ink-3)', marginTop: '2px' }}>
@@ -242,13 +224,14 @@ function SecretaireDashboard() {
           )}
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
 
 const styles = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400',
     fontSize: '32px',
     letterSpacing: '-0.02em',
@@ -263,7 +246,7 @@ const styles = {
     marginBottom: '22px',
   },
   heroCard: {
-    background: 'linear-gradient(155deg, #0f4842 0%, #1d6e66 100%)',
+    background: 'linear-gradient(135deg, #57c8cb 0%, #0d9488 100%)',
     borderRadius: 'var(--radius)',
     padding: '28px 20px',
     color: 'white',
@@ -282,7 +265,7 @@ const styles = {
     justifyContent: 'space-between', marginBottom: '14px',
   },
   cardTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '500',
+    fontFamily: "'Inter', sans-serif", fontWeight: '500',
     fontSize: '17px', letterSpacing: '-0.01em', color: 'var(--ink)',
   },
   cardSub: {
@@ -314,7 +297,7 @@ const styles = {
     fontWeight: '500',
   },
   heroBig: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '300',
     fontSize: '52px',
     letterSpacing: '-0.02em',
@@ -325,7 +308,7 @@ const styles = {
     alignItems: 'baseline',
   },
   heroEmpty: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '300',
     fontSize: '28px',
     color: 'rgba(255,255,255,0.85)',
@@ -346,7 +329,7 @@ const styles = {
     padding: '10px 0',
   },
   heroTime: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontSize: '13px',
     color: 'rgba(255,255,255,0.7)',
   },
@@ -360,7 +343,7 @@ const styles = {
     fontWeight: '500',
   },
   heroRef: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontSize: '12px',
     color: 'rgba(255,255,255,0.5)',
     textAlign: 'right',
@@ -396,7 +379,7 @@ const styles = {
     marginBottom: '16px',
   },
   cardTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontSize: '1.05rem',
     color: 'var(--ink)',
     margin: '0 0 1rem',
@@ -429,7 +412,7 @@ const styles = {
   },
   shortcutLabel: {
     display: 'block',
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '500',
     fontSize: '16px',
     marginBottom: '2px',

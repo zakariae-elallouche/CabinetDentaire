@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('frais_visite_base', 10, 2)->default(0);
             $table->decimal('frais_operations', 10, 2)->default(0);
             $table->decimal('montant_total', 10, 2)->default(0);
-            $table->enum('statut', ['en_attente', 'payee', 'annulee', 'partiellement_payee'])->default('en_attente');
+            $table->string('statut')->default('en_attente');
             $table->date('date_paiement')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

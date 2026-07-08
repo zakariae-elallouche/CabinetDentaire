@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\OrdonnanceMedicament;
 
 class Ordonnance extends Model
 {
-    public function medicaments() { return $this->hasMany(OrdonnanceMedicament::class); }
+    use BelongsToTenant;
 
     protected $fillable = [
+        'tenant_id',
         'visite_id',
         'patient_id',
         'dentiste_id',
@@ -17,4 +18,6 @@ class Ordonnance extends Model
         'instructions_generales',
         'statut',
     ];
+
+    public function medicaments() { return $this->hasMany(OrdonnanceMedicament::class); }
 }

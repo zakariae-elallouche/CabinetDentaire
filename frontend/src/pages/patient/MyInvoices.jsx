@@ -4,6 +4,8 @@ import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import jsPDF from 'jspdf'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 function MyInvoices() {
   const [invoices, setInvoices] = useState([])
@@ -179,7 +181,6 @@ function MyInvoices() {
   const InvoiceRow = ({ f }) => (
     <div
       style={{ ...styles.invoiceRow, flexWrap: isMobile ? 'wrap' : 'nowrap' }}
-      onClick={() => setSelectedInvoice(f)}
     >
       {/* Icon */}
       <div style={{
@@ -208,7 +209,7 @@ function MyInvoices() {
         display: 'flex', alignItems: 'center', gap: '10px',
         ...(isMobile ? { width: '100%', paddingLeft: '58px', paddingTop: '4px' } : {}),
       }}>
-        <div style={{ fontFamily: '"Geist Mono", monospace', fontSize: '14px', fontWeight: '500', color: 'var(--ink)', flexShrink: 0 }}>
+        <div style={{ fontFamily: '"Inter", sans-serif', fontSize: '14px', fontWeight: '500', color: 'var(--ink)', flexShrink: 0 }}>
           {f.montant_total} MAD
         </div>
         <span style={{
@@ -221,6 +222,12 @@ function MyInvoices() {
           {f.statut === 'en_attente' ? 'À régler' : 'Payée'}
         </span>
         <button
+          style={styles.btnPDF}
+          onClick={e => { e.stopPropagation(); setSelectedInvoice(f) }}
+        >
+          Détail
+        </button>
+        <button
           style={{ ...styles.btnPDF, marginLeft: 'auto' }}
           onClick={e => { e.stopPropagation(); generatePDF(f) }}
         >
@@ -229,6 +236,8 @@ function MyInvoices() {
       </div>
     </div>
   )
+
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
@@ -247,35 +256,35 @@ function MyInvoices() {
           {totalARegler > 0 && (
             <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
               <div style={{ fontSize: '10.5px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: '4px' }}>Total à régler</div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontSize: isMobile ? '24px' : '32px', fontWeight: '400', color: 'var(--gold)', letterSpacing: '-0.02em' }}>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isMobile ? '24px' : '32px', fontWeight: '400', color: 'var(--gold)', letterSpacing: '-0.02em' }}>
                 {totalARegler} <span style={{ fontSize: '14px' }}>MAD</span>
               </div>
             </div>
           )}
         </div>
 
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)' }}>Chargement...</p>
-        ) : error ? (
-          <EmptyState title="Impossible de charger les factures" sub="Vérifiez votre connexion et réessayez." />
-        ) : invoices.length === 0 ? (
-          <EmptyState title="Aucune facture" sub="Vos factures apparaîtront ici après chaque visite." />
-        ) : (
-          <>
-            {enAttente.length > 0 && (
-              <div style={{ marginBottom: '24px' }}>
-                <div style={styles.sectionLabel}>À régler</div>
-                {enAttente.map(f => <InvoiceRow key={f.id} f={f} />)}
-              </div>
+        <AnimateIn>
+            {error ? (
+              <EmptyState title="Impossible de charger les factures" sub="Vérifiez votre connexion et réessayez." />
+            ) : invoices.length === 0 ? (
+              <EmptyState title="Aucune facture" sub="Vos factures apparaîtront ici après chaque visite." />
+            ) : (
+              <>
+                {enAttente.length > 0 && (
+                  <div style={{ marginBottom: '24px' }}>
+                    <div style={styles.sectionLabel}>À régler</div>
+                    {enAttente.map(f => <InvoiceRow key={f.id} f={f} />)}
+                  </div>
+                )}
+                {payees.length > 0 && (
+                  <div>
+                    <div style={styles.sectionLabel}>Payées</div>
+                    {payees.map(f => <InvoiceRow key={f.id} f={f} />)}
+                  </div>
+                )}
+              </>
             )}
-            {payees.length > 0 && (
-              <div>
-                <div style={styles.sectionLabel}>Payées</div>
-                {payees.map(f => <InvoiceRow key={f.id} f={f} />)}
-              </div>
-            )}
-          </>
-        )}
+          </AnimateIn>
       </div>
 
       {/* ─── Drawer détail facture ─── */}
@@ -308,7 +317,7 @@ function MyInvoices() {
           <>
             {/* Drawer header */}
             <div style={{ padding: isMobile ? '16px' : '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
                 Facture {selectedInvoice.numero_facture}
               </h2>
               <button
@@ -350,7 +359,7 @@ function MyInvoices() {
 
               {/* Détail facturation */}
               <div style={{ marginTop: '22px', marginBottom: '10px' }}>
-                <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', paddingBottom: '6px', borderBottom: '1px solid var(--line)', margin: '0 0 10px' }}>
+                <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', paddingBottom: '6px', borderBottom: '1px solid var(--line)', margin: '0 0 10px' }}>
                   Détails de la facturation
                 </h3>
               </div>
@@ -360,20 +369,20 @@ function MyInvoices() {
                 {parseFloat(selectedInvoice.frais_visite_base || 0) > 0 && (
                   <div style={styles.invLine}>
                     <span>Frais de visite de base</span>
-                    <span style={{ fontFamily: '"Geist Mono", monospace' }}>{parseFloat(selectedInvoice.frais_visite_base).toFixed(2)} MAD</span>
+                    <span style={{ fontFamily: '"Inter", sans-serif' }}>{parseFloat(selectedInvoice.frais_visite_base).toFixed(2)} MAD</span>
                   </div>
                 )}
                 {/* Opérations */}
                 {(selectedInvoice.visite?.operations || []).map((op, i) => (
                   <div key={i} style={styles.invLine}>
                     <span style={{ color: 'var(--ink-2)' }}>· {op.nom_operation || op.nom}</span>
-                    <span style={{ fontFamily: '"Geist Mono", monospace' }}>{parseFloat(op.cout).toFixed(2)} MAD</span>
+                    <span style={{ fontFamily: '"Inter", sans-serif' }}>{parseFloat(op.cout).toFixed(2)} MAD</span>
                   </div>
                 ))}
                 {/* Total */}
                 <div style={{ ...styles.invLine, borderBottom: 'none', borderTop: '1px solid var(--line-strong)', marginTop: '6px', paddingTop: '14px', fontWeight: '500' }}>
                   <span>Total</span>
-                  <span style={{ fontFamily: '"Geist Mono", monospace' }}>{selectedInvoice.montant_total} MAD</span>
+                  <span style={{ fontFamily: '"Inter", sans-serif' }}>{selectedInvoice.montant_total} MAD</span>
                 </div>
               </div>
 
@@ -403,7 +412,7 @@ function MyInvoices() {
 
 const styles = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400',
     fontSize: '36px',
     letterSpacing: '-0.02em',
@@ -430,7 +439,6 @@ const styles = {
     border: '1px solid var(--line)',
     borderRadius: 'var(--radius)',
     marginBottom: '10px',
-    cursor: 'pointer',
     transition: 'border-color 0.15s',
   },
   invoiceIcon: {
@@ -441,7 +449,7 @@ const styles = {
   },
   invoiceTitle: {
     fontSize: '14.5px', fontWeight: '500',
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     display: 'block', marginBottom: '2px',
     color: 'var(--ink)',
   },

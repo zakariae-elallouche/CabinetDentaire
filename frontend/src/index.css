@@ -1,40 +1,130 @@
 :root {
-  --bg: #f4f1ea;
-  --surface: #fbf8f2;
+  --bg: #f4f6f9;
+  --surface: #ffffff;
   --card: #ffffff;
-  --ink: #1a201f;
-  --ink-2: #46504d;
-  --ink-3: #7d8682;
-  --line: #e3ddd0;
-  --line-strong: #c9c1ae;
-  --accent: #0f4842;
-  --accent-2: #1d6e66;
-  --accent-soft: #dfe9e6;
-  --gold: #b5894a;
-  --amber-soft: #f1e4cf;
-  --rose: #b44a4a;
-  --rose-soft: #f2dede;
-  --success: #2e6e4a;
-  --success-soft: #d9e8df;
-  --info: #1e40af;
-  --info-soft: #dbeafe;
-  --radius: 14px;
-  --radius-sm: 8px;
+  --ink: #0b1a2e;
+  --ink-2: #475569;
+  --ink-3: #94a3b8;
+  --line: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --xray-bg: #0b1a2e;
+  --accent: #57c8cb;
+  --accent-2: #0d9488;
+  --accent-soft: #f0fffd;
+  --gold: #faad14;
+  --amber-soft: #fffbe6;
+  --rose: #ff4d4f;
+  --rose-soft: #fff2f0;
+  --success: #52c41a;
+  --success-soft: #f6ffed;
+  --info: #57c8cb;
+  --info-soft: #f0fffd;
+  --radius: 8px;
+  --radius-sm: 5px;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.10), 0 8px 10px -6px rgba(0,0,0,0.05);
+  --shadow-glow: 0 0 20px rgba(87,200,203,0.15);
+  --transition-fast: 150ms cubic-bezier(0.4,0,0.2,1);
+  --transition-base: 200ms cubic-bezier(0.4,0,0.2,1);
+  --transition-slow: 300ms cubic-bezier(0.4,0,0.2,1);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   background: var(--bg);
   color: var(--ink);
-  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
-input, textarea, select { font-family: inherit; color: inherit; }
+::selection {
+  background: rgba(87,200,203,0.2);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+button {
+  font-family: inherit; cursor: pointer; border: none; background: none; color: inherit;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+input, textarea, select {
+  font-family: inherit; color: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(87,200,203,0.12);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+
+@keyframes donut-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.animate-in {
+  animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
 
 /* ── Custom toasts ── */
 .hz-toast {
@@ -43,7 +133,7 @@ input, textarea, select { font-family: inherit; color: inherit; }
   border: 1px solid var(--line) !important;
   border-radius: 12px !important;
   box-shadow: 0 8px 32px rgba(10,32,26,0.14) !important;
-  font-family: "Geist", ui-sans-serif, system-ui, sans-serif !important;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
   font-size: 13.5px !important;
   padding: 14px 18px !important;
   min-height: unset !important;

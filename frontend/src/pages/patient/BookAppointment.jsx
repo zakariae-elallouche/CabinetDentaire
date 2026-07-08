@@ -4,13 +4,12 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const DAYS = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM']
+const DAY_KEYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-
-const SLOTS_MATIN = ['09:00','09:30','10:00','10:30','11:00','11:30']
-const SLOTS_APREM = ['14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30']
-const ALL_SLOTS = [...SLOTS_MATIN, ...SLOTS_APREM]
 
 function BookAppointment() {
   const navigate = useNavigate()
@@ -22,9 +21,23 @@ function BookAppointment() {
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [raison, setRaison] = useState('')
   const [loading, setLoading] = useState(false)
-  const [takenSlots, setTakenSlots] = useState([])
+  const [freeSlots, setFreeSlots] = useState([])
   const [loadingSlots, setLoadingSlots] = useState(false)
+  const [horaires, setHoraires] = useState(null)
+  const [fraisVisite, setFraisVisite] = useState(null)
 
+  // Fetch horaires + frais_visite once on mount
+  useEffect(() => {
+    const todayStr = toLocalDateStr(new Date())
+    api.get(`/rendez-vous/available-slots?date=${todayStr}`)
+      .then(res => {
+        setHoraires(res.data.horaires)
+        setFraisVisite(res.data.frais_visite)
+      })
+      .catch(() => {})
+  }, [])
+
+  // Fetch available slots when selected date changes
   useEffect(() => {
     if (!selectedDate) return
     setSelectedSlot(null)
@@ -32,16 +45,20 @@ function BookAppointment() {
     setLoadingSlots(true)
     api.get(`/rendez-vous/available-slots?date=${dateStr}`)
       .then(res => {
-        const available = res.data.slots || []
-        const today = new Date()
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
-        const nowTime = `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}`
-        const isToday = dateStr === todayStr
-        setTakenSlots(ALL_SLOTS.filter(s => !available.includes(s) || (isToday && s <= nowTime)))
+        setHoraires(res.data.horaires || horaires)
+        setFraisVisite(res.data.frais_visite)
+        setFreeSlots(res.data.slots || [])
       })
-      .catch(() => setTakenSlots([]))
+      .catch(() => setFreeSlots([]))
       .finally(() => setLoadingSlots(false))
   }, [selectedDate])
+
+  // ─── Vérifier si un jour est actif dans les horaires ───
+  const isDayActive = (date) => {
+    if (!horaires) return date.getDay() !== 0
+    const dayKey = DAY_KEYS[date.getDay()]
+    return horaires[dayKey]?.actif ?? true
+  }
 
   // ─── Génerer les jours du mois ───
   const getDays = () => {
@@ -53,18 +70,15 @@ function BookAppointment() {
     const startOffset = firstDay === 0 ? 6 : firstDay - 1
 
     const days = []
-    // Jours du mois précédent
     for (let i = startOffset - 1; i >= 0; i--) {
       days.push({ day: daysInPrevMonth - i, current: false, past: true })
     }
-    // Jours du mois actuel
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i)
       const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate())
-      const isSunday = date.getDay() === 0
-      days.push({ day: i, current: true, past: isPast || isSunday, date })
+      const closed = !isDayActive(date)
+      days.push({ day: i, current: true, past: isPast || closed, date })
     }
-    // Compléter avec jours du mois suivant
     const remaining = 42 - days.length
     for (let i = 1; i <= remaining; i++) {
       days.push({ day: i, current: false, past: true })
@@ -110,10 +124,10 @@ function BookAppointment() {
 
   return (
     <Layout>
-      <div>
+      <AnimateIn>
         {/* Titre */}
         <div style={{ marginBottom: '28px' }}>
-          <h1 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px' }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px' }}>
             Réserver un <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>rendez-vous</em>
           </h1>
           <p style={{ color: 'var(--ink-2)', fontSize: '14px', margin: 0 }}>
@@ -128,7 +142,7 @@ function BookAppointment() {
 
             {/* Header calendrier */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '18px', color: 'var(--ink)' }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '18px', color: 'var(--ink)' }}>
                 {MONTHS[currentMonth.getMonth()]} {currentMonth.getFullYear()}
               </h2>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -202,7 +216,9 @@ function BookAppointment() {
                 <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--accent)', display: 'inline-block' }}/>
                 Créneaux disponibles
               </span>
-              <span style={{ fontSize: '12px', color: 'var(--ink-3)' }}>· Dimanche fermé</span>
+              <span style={{ fontSize: '12px', color: 'var(--ink-3)' }}>
+                · {horaires ? Object.entries(horaires).filter(([_,v]) => !v.actif).map(([k]) => k.charAt(0).toUpperCase() + k.slice(1)).join(', ') + ' fermé' : 'Dimanche fermé'}
+              </span>
             </div>
           </div>
 
@@ -212,68 +228,72 @@ function BookAppointment() {
 
               {/* Date sélectionnée */}
               <div style={{ marginBottom: '16px' }}>
-                <b style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '18px', display: 'block', color: 'var(--ink)' }}>
+                <b style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '18px', display: 'block', color: 'var(--ink)' }}>
                   {formatDate(selectedDate)}
                 </b>
                 <small style={{ color: 'var(--ink-3)', fontSize: '12.5px' }}>Choisissez un créneau disponible</small>
+                {fraisVisite !== null && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>
+                    Frais de visite : <strong>{fraisVisite} MAD</strong>
+                  </div>
+                )}
               </div>
 
-              {/* Matin */}
-              <div style={{ marginBottom: '14px' }}>
-                <div style={styles.slotLabel}>Matin</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
-                  {SLOTS_MATIN.map(slot => {
-                    const taken = takenSlots.includes(slot)
-                    const selected = selectedSlot === slot
-                    return (
-                      <button
-                        key={slot}
-                        disabled={taken}
-                        onClick={() => setSelectedSlot(slot)}
-                        style={{
-                          ...styles.slot,
-                          ...(selected ? styles.slotSelected : {}),
-                          ...(taken ? styles.slotTaken : {}),
-                        }}
-                      >
-                        {slot}
-                      </button>
-                    )
-                  })}
+              {/* Créneaux dynamiques */}
+              {loadingSlots ? (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0' }}>
+                  <DonutLoader />
                 </div>
-              </div>
-
-              {/* Après-midi */}
-              <div>
-                <div style={styles.slotLabel}>Après-midi</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
-                  {SLOTS_APREM.map(slot => {
-                    const taken = takenSlots.includes(slot)
-                    const selected = selectedSlot === slot
-                    return (
-                      <button
-                        key={slot}
-                        disabled={taken}
-                        onClick={() => setSelectedSlot(slot)}
-                        style={{
-                          ...styles.slot,
-                          ...(selected ? styles.slotSelected : {}),
-                          ...(taken ? styles.slotTaken : {}),
-                        }}
-                      >
-                        {slot}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* Notes */}
-              {loadingSlots && (
-                <p style={{ fontSize: '12px', color: 'var(--ink-3)', marginBottom: '8px' }}>
-                  Chargement des créneaux…
-                </p>
-              )}
+              ) : (() => {
+                const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`
+                const nowTime = `${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')}`
+                const isToday = toLocalDateStr(selectedDate) === todayStr
+                const pastSlots = isToday ? freeSlots.filter(s => s <= nowTime) : []
+                const morning = freeSlots.filter(s => parseInt(s) < 12)
+                const afternoon = freeSlots.filter(s => parseInt(s) >= 12)
+                return (
+                  <>
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={styles.slotLabel}>Matin</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
+                        {morning.length > 0 ? morning.map(slot => {
+                          const passe = pastSlots.includes(slot)
+                          return (
+                            <button key={slot} disabled={passe} onClick={() => !passe && setSelectedSlot(slot)} style={{
+                              ...styles.slot,
+                              ...(selectedSlot === slot && !passe ? styles.slotSelected : {}),
+                              ...(passe ? styles.slotTaken : {}),
+                            }}>
+                              {slot}
+                            </button>
+                          )
+                        }) : (
+                          <span style={{ fontSize: 12, color: 'var(--ink-3)', gridColumn: '1 / -1', padding: '14px 0', textAlign: 'center' }}>Aucun créneau le matin</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={styles.slotLabel}>Après-midi</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '8px' }}>
+                        {afternoon.length > 0 ? afternoon.map(slot => {
+                          const passe = pastSlots.includes(slot)
+                          return (
+                            <button key={slot} disabled={passe} onClick={() => !passe && setSelectedSlot(slot)} style={{
+                              ...styles.slot,
+                              ...(selectedSlot === slot && !passe ? styles.slotSelected : {}),
+                              ...(passe ? styles.slotTaken : {}),
+                            }}>
+                              {slot}
+                            </button>
+                          )
+                        }) : (
+                          <span style={{ fontSize: 12, color: 'var(--ink-3)', gridColumn: '1 / -1', padding: '14px 0', textAlign: 'center' }}>Aucun créneau l'après-midi</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
 
               <div style={{ marginTop: '16px' }}>
                 <label style={styles.slotLabel}>Motif de la visite (optionnel)</label>
@@ -328,7 +348,7 @@ function BookAppointment() {
             </div>
           </div>
         </div>
-      </div>
+      </AnimateIn>
     </Layout>
   )
 }
@@ -368,7 +388,7 @@ const styles = {
     textAlign: 'center',
     cursor: 'pointer',
     background: 'var(--card)',
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     color: 'var(--ink-2)',
     transition: 'all 0.1s',
   },

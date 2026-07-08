@@ -1,0 +1,158 @@
+{
+  "name": "DentASpace",
+  "tagline": "système de gestion de cabinet dentaire",
+  "description": "DentASpace is a dental practice management web app — patients, appointments, invoicing.",
+  "sourceUrl": "designmd://design-system-inspired-by-application",
+  "logo": {
+    "primary": "assets/DentASpace-Logo.png",
+    "alternates": [
+      "assets/DentASpace.png",
+      "assets/DentASpace-LogoBG.png"
+    ],
+    "notes": "Logo extracted from DentASpace.png. Primary brand color #5ce1e6 (cyan) extracted via logo color analysis. Dark background #191919 from LogoBG variant."
+  },
+  "colors": [
+    {
+      "role": "background",
+      "hex": "#ffffff",
+      "oklch": "",
+      "name": "Surface",
+      "usage": "page canvas"
+    },
+    {
+      "role": "foreground",
+      "hex": "#191919",
+      "oklch": "",
+      "name": "Primary",
+      "usage": "body text and headings"
+    },
+    {
+      "role": "accent",
+      "hex": "#57c8cb",
+      "oklch": "",
+      "name": "Secondary",
+      "usage": "primary actions and emphasis"
+    },
+    {
+      "role": "surface",
+      "hex": "#f0fdfa",
+      "oklch": "",
+      "name": "Surface",
+      "usage": "cards and panels"
+    },
+    {
+      "role": "muted",
+      "hex": "#64748b",
+      "oklch": "",
+      "name": "Muted",
+      "usage": "secondary text and metadata"
+    },
+    {
+      "role": "border",
+      "hex": "#e2e8f0",
+      "oklch": "",
+      "name": "Border",
+      "usage": "rules and dividers"
+    },
+    {
+      "role": "accent-secondary",
+      "hex": "#0d9488",
+      "oklch": "",
+      "name": "Accent",
+      "usage": "secondary actions and links"
+    }
+  ],
+  "typography": {
+    "display": {
+      "family": "Inter",
+      "fallbacks": [
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Helvetica Neue",
+        "Arial",
+        "sans-serif"
+      ],
+      "weights": [
+        400,
+        600,
+        700
+      ]
+    },
+    "body": {
+      "family": "Inter",
+      "fallbacks": [
+        "system-ui",
+        "-apple-system",
+        "Segoe UI",
+        "Helvetica Neue",
+        "Arial",
+        "sans-serif"
+      ],
+      "weights": [
+        400,
+        500
+      ]
+    }
+  },
+  "voice": {
+    "adjectives": [
+      "clean",
+      "clinical",
+      "approachable",
+      "modern"
+    ],
+    "tone": "professionnel et rassurant pour les patients, efficace pour les secrétaires",
+    "messagingPillars": [
+      "Gestion de cabinet dentaire simple et moderne",
+      "Prise de rendez-vous, patients, facturation",
+      "Application mobile-first pour les patients, responsive pour les secrétaires"
+    ],
+    "vocabulary": {
+      "use": [
+        "cabinet dentaire",
+        "patients",
+        "rendez-vous",
+        "secrétaires",
+        "soins dentaires",
+        "planning"
+      ],
+      "avoid": [
+        "jargon technique non nécessaire",
+        "termes trop médicaux"
+      ]
+    }
+  },
+  "imagery": {
+    "style": "clean photography, minimalist illustrations, dental/medical context",
+    "subjects": [
+      "dental clinic environment",
+      "patient care moments",
+      "happy smiles"
+    ],
+    "treatment": "bright, high-key, warm clinical lighting",
+    "avoid": [
+      "graphic medical imagery",
+      "blood",
+      "invasive procedures"
+    ],
+    "samples": [
+      {
+        "file": "imagery/DentASpace.png",
+        "kind": "upload"
+      }
+    ]
+  },
+  "layout": {
+    "radius": "8px",
+    "borderWeight": "1px",
+    "spacing": "8px baseline grid",
+    "postureRules": [
+      "Cards use 8px radius, 1px #e2e8f0 border, subtle shadow on hover",
+      "Accent #5ce1e6 used sparingly — one hero element per screen max",
+      "Dark text #191919 on white #ffffff for primary readability",
+      "Surface #f0fdfa for card backgrounds, never pure gray",
+      "Green #10b981 for success/confirmed states only"
+    ]
+  }
+}

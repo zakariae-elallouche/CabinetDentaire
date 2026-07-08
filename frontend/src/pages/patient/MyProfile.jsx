@@ -3,6 +3,8 @@ import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 function MyProfile() {
   const { user } = useAuth()
@@ -54,20 +56,18 @@ function MyProfile() {
     }
   }
 
-  if (loading) return (
-    <Layout>
-      <div style={{ color: 'var(--ink-3)', padding: '2rem' }}>Chargement…</div>
-    </Layout>
-  )
-
   const initials = ((profile.prenom || '')[0] || '') + ((profile.nom || '')[0] || '')
+
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
       <h1 style={s.title}>Mon <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>profil</em></h1>
       <p style={s.subtitle}>Gérez vos informations personnelles et médicales.</p>
 
-      {toast && (
+      <AnimateIn>
+        <>
+        {toast && (
         <div style={{ ...s.toast, background: toast.type === 'ok' ? 'var(--success-soft)' : 'var(--rose-soft)', color: toast.type === 'ok' ? 'var(--success)' : 'var(--rose)', border: `1px solid ${toast.type === 'ok' ? '#a3c9b4' : '#e4b4b4'}` }}>
           {toast.msg}
         </div>
@@ -153,6 +153,8 @@ function MyProfile() {
         </div>
 
       </div>
+      </>
+        </AnimateIn>
     </Layout>
   )
 }
@@ -185,7 +187,7 @@ function Field({ label, name, value, onChange, type = 'text', textarea, placehol
 
 const s = {
   title: {
-    fontFamily: '"Fraunces", serif', fontWeight: 400,
+    fontFamily: '"Inter", serif', fontWeight: 400,
     fontSize: 36, letterSpacing: '-0.02em',
     margin: '0 0 6px', color: 'var(--ink)',
   },
@@ -212,7 +214,7 @@ const s = {
     color: '#fff', fontWeight: 600, fontSize: 18, flexShrink: 0,
   },
   sectionHead: {
-    fontFamily: '"Fraunces", serif', fontWeight: 500,
+    fontFamily: '"Inter", serif', fontWeight: 500,
     fontSize: 15, color: 'var(--accent)',
     margin: '0 0 16px', paddingBottom: 8,
     borderBottom: '1px solid var(--line)',

@@ -3,6 +3,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_LONG = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
@@ -39,6 +41,8 @@ function MyPrescriptions() {
 
   const generatePDF = (p) => generateOrdonnancePDF(p, patientName)
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
       <div>
@@ -53,40 +57,45 @@ function MyPrescriptions() {
           </p>
         </div>
 
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)' }}>Chargement...</p>
-        ) : error ? (
-          <EmptyState title="Impossible de charger les ordonnances" sub="Vérifiez votre connexion et réessayez." />
-        ) : prescriptions.length === 0 ? (
-          <EmptyState title="Aucune ordonnance" sub="Aucune ordonnance délivrée pour le moment." />
-        ) : (
-          prescriptions.map(p => (
-            <div
-              key={p.id}
-              style={{ ...s.row, background: selected?.id === p.id ? 'var(--accent-soft)' : 'var(--card)' }}
-              onClick={() => setSelected(p)}
-            >
-              <div style={s.icon}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-30 12 12)"/>
-                  <path d="M8.5 6.5l7 7"/>
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <b style={s.rowTitle}>Ordonnance RX-{String(p.id).padStart(4, '0')}</b>
-                <small style={s.rowMeta}>
-                  {p.medicaments?.length || 0} médicaments · délivrée le {fmtDate(p.date_delivrance)}
-                </small>
-              </div>
-              <button
-                style={s.btnPDF}
-                onClick={e => { e.stopPropagation(); generatePDF(p) }}
-              >
-                ↓ PDF
-              </button>
-            </div>
-          ))
-        )}
+        <AnimateIn>
+            {error ? (
+              <EmptyState title="Impossible de charger les ordonnances" sub="Vérifiez votre connexion et réessayez." />
+            ) : prescriptions.length === 0 ? (
+              <EmptyState title="Aucune ordonnance" sub="Aucune ordonnance délivrée pour le moment." />
+            ) : (
+              prescriptions.map(p => (
+                <div
+                  key={p.id}
+                  style={{ ...s.row, background: selected?.id === p.id ? 'var(--accent-soft)' : 'var(--card)' }}
+                >
+                  <div style={s.icon}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-30 12 12)"/>
+                      <path d="M8.5 6.5l7 7"/>
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <b style={s.rowTitle}>Ordonnance RX-{String(p.id).padStart(4, '0')}</b>
+                    <small style={s.rowMeta}>
+                      {p.medicaments?.length || 0} médicaments · délivrée le {fmtDate(p.date_delivrance)}
+                    </small>
+                  </div>
+                  <button
+                    style={s.btnPDF}
+                    onClick={e => { e.stopPropagation(); setSelected(p) }}
+                  >
+                    Détail
+                  </button>
+                  <button
+                    style={s.btnPDF}
+                    onClick={e => { e.stopPropagation(); generatePDF(p) }}
+                  >
+                    ↓ PDF
+                  </button>
+                </div>
+              ))
+            )}
+          </AnimateIn>
       </div>
 
       {/* ── Overlay ── */}
@@ -118,7 +127,7 @@ function MyPrescriptions() {
           <>
             {/* Header */}
             <div style={{ padding: '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
                 Ordonnance RX-{String(selected.id).padStart(4, '0')}
               </h2>
               <button
@@ -150,7 +159,7 @@ function MyPrescriptions() {
               )}
 
               {/* Médicaments */}
-              <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '22px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
+              <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '22px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
                 Médicaments prescrits
               </h3>
 
@@ -196,7 +205,7 @@ function MyPrescriptions() {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0, maxWidth: '60ch' },
@@ -205,7 +214,7 @@ const s = {
     display: 'flex', alignItems: 'center', gap: '16px',
     padding: '16px 20px',
     border: '1px solid var(--line)', borderRadius: 'var(--radius)',
-    marginBottom: '10px', cursor: 'pointer', transition: 'background 0.15s',
+    marginBottom: '10px', transition: 'background 0.15s',
   },
   icon: {
     width: '42px', height: '42px', borderRadius: '10px',
@@ -213,7 +222,7 @@ const s = {
     background: 'var(--accent-soft)', color: 'var(--accent)', flexShrink: 0,
   },
   rowTitle: {
-    fontSize: '14.5px', fontWeight: '500', fontFamily: "'Fraunces', serif",
+    fontSize: '14.5px', fontWeight: '500', fontFamily: "'Inter', sans-serif",
     display: 'block', marginBottom: '2px', color: 'var(--ink)',
   },
   rowMeta: { color: 'var(--ink-3)', fontSize: '12.5px' },

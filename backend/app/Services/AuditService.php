@@ -14,7 +14,8 @@ class AuditService
         ?array $nouvelle = null
     ): void {
         Audit::create([
-            'utilisateur_id'    => session('user'),
+            'tenant_id'         => tenant_id(),
+            'utilisateur_id'    => auth()->id(),
             'action'            => $action,
             'table_affectee'    => $table,
             'id_enregistrement' => $recordId,

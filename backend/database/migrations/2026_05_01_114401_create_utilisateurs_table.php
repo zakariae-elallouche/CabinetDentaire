@@ -12,8 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('role', ['patient', 'secretaire', 'dentiste', 'admin']);
-            $table->enum('statut', ['actif', 'inactif', 'suspendu'])->default('actif');
+            $table->string('role');
+            $table->string('statut')->default('actif');
             $table->datetime('date_creation')->useCurrent();
             $table->datetime('derniere_connexion')->nullable();
             $table->timestamps();

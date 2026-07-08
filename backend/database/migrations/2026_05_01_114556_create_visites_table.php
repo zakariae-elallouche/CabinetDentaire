@@ -17,7 +17,7 @@ return new class extends Migration
             $table->text('diagnostic')->nullable();
             $table->text('traitement_fourni')->nullable();
             $table->text('notes')->nullable();
-            $table->enum('statut', ['en_cours', 'complete', 'annulee'])->default('en_cours');
+            $table->string('statut')->default('en_cours');
             $table->datetime('cree_le')->useCurrent();
             $table->timestamps();
         });

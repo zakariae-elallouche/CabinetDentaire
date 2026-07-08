@@ -4,6 +4,8 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 function RecordVisit() {
   const { rdv_id } = useParams()
@@ -15,11 +17,16 @@ function RecordVisit() {
   const [selectedOps, setSelectedOps] = useState([])
   const [rdvs, setRdvs] = useState([])
   const [selectedRdvId, setSelectedRdvId] = useState(rdv_id || '')
+  const [dataLoading, setDataLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [selectOpVal, setSelectOpVal] = useState('')
+  const [fraisVisite, setFraisVisite] = useState(200)
 
-  const BASE_FEE = 200
-  const total = BASE_FEE + selectedOps.reduce((s, op) => s + Number(op.cout), 0)
+  useEffect(() => {
+    api.get('/clinique/info').then(r => setFraisVisite(r.data.frais_visite ?? 200)).catch(() => {})
+  }, [])
+
+  const total = fraisVisite + selectedOps.reduce((s, op) => s + Number(op.cout), 0)
 
   useEffect(() => {
     Promise.all([api.get('/operations'), api.get('/rendez-vous')])
@@ -28,7 +35,7 @@ function RecordVisit() {
         const todayStr = new Date().toISOString().slice(0, 10)
         setRdvs(rdvRes.data.filter(r => r.statut === 'CONFIRMÉ' && r.date === todayStr))
       })
-      .catch(() => {})
+      .catch(() => {}).finally(() => setDataLoading(false))
   }, [])
 
   const selectedRdv = rdvs.find(r => String(r.id) === String(selectedRdvId))
@@ -52,7 +59,7 @@ function RecordVisit() {
       const res = await api.post('/visites', {
         ...formData,
         rendezvous_id: selectedRdvId,
-        frais_visite_base: BASE_FEE,
+        frais_visite_base: fraisVisite,
         operations: selectedOps.map(op => ({
           nom_operation: op.nom,
           cout: op.cout,
@@ -66,8 +73,11 @@ function RecordVisit() {
     finally { setLoading(false) }
   }
 
+  if (dataLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* Header */}
@@ -180,7 +190,7 @@ function RecordVisit() {
               {/* Base fee */}
               <div style={{ ...s.opRow, borderBottom: 'none' }}>
                 <span style={{ flex: 1, fontSize: '13px', color: 'var(--ink-3)' }}>Frais de visite de base</span>
-                <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', color: 'var(--ink-2)' }}>{BASE_FEE} MAD</span>
+                <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '13px', color: 'var(--ink-2)' }}>{fraisVisite} MAD</span>
               </div>
 
               {/* Total */}
@@ -203,13 +213,14 @@ function RecordVisit() {
 
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
@@ -219,7 +230,7 @@ const s = {
     borderRadius: 'var(--radius)', padding: '24px', marginBottom: '16px',
   },
   cardTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '17px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '17px',
     color: 'var(--ink)', margin: '0 0 20px',
   },
   formGroup: { marginBottom: '16px' },
@@ -256,7 +267,7 @@ const s = {
     padding: '10px 0', borderBottom: '1px dashed var(--line)',
   },
   opCout: {
-    fontFamily: '"Geist Mono", monospace', fontSize: '13px',
+    fontFamily: '"Inter", sans-serif', fontSize: '13px',
     fontWeight: '500', color: 'var(--accent)', minWidth: '80px', textAlign: 'right',
   },
   btnRemove: {
@@ -271,7 +282,7 @@ const s = {
     padding: '14px 16px', marginTop: '14px',
   },
   totalAmount: {
-    fontFamily: '"Geist Mono", monospace', fontSize: '20px',
+    fontFamily: '"Inter", sans-serif', fontSize: '20px',
     fontWeight: '600', color: 'var(--accent)',
   },
   btnPrimary: {

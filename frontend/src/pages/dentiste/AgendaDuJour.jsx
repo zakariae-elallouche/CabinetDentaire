@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const DAYS_FR   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi']
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
@@ -68,6 +70,8 @@ function AgendaDuJour() {
   const filteredRdvs    = q ? rdvs.filter(r => pName(r).toLowerCase().includes(q)) : rdvs
   const filteredVisites = q ? visites.filter(v => pName(v).toLowerCase().includes(q)) : visites
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
       <div>
@@ -126,9 +130,8 @@ function AgendaDuJour() {
         </div>
 
         {/* ── Content ── */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', padding: '3rem 0', textAlign: 'center' }}>Chargement...</p>
-        ) : tab === 'rdv' ? (
+        <AnimateIn>
+          {tab === 'rdv' ? (
           filteredRdvs.length === 0 ? (
             <EmptyState title="Aucun rendez-vous" sub={isToday ? "Pas de consultations programmées aujourd'hui." : 'Aucune consultation ce jour-là.'} />
           ) : (
@@ -150,7 +153,7 @@ function AgendaDuJour() {
                     <div style={{ ...s.rdvCard, opacity: done ? 0.65 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                         {isMobile && (
-                          <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '12px', fontWeight: '500', color: 'var(--ink-3)', flexShrink: 0 }}>
+                          <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '12px', fontWeight: '500', color: 'var(--ink-3)', flexShrink: 0 }}>
                             {rdv.heure?.slice(0, 5)?.replace(':', 'h')}
                           </span>
                         )}
@@ -209,10 +212,10 @@ function AgendaDuJour() {
                       {/* Row 1: dot + name + ref + chevron */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
-                        <b style={{ fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Fraunces', serif", flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <b style={{ fontSize: '14px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Inter', sans-serif", flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {pName(v)}
                         </b>
-                        <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '11px', color: 'var(--ink-3)', flexShrink: 0 }}>
+                        <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '11px', color: 'var(--ink-3)', flexShrink: 0 }}>
                           VIS-{String(v.id).padStart(4, '0')}
                         </span>
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--ink-3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'transform 0.2s', transform: open ? 'rotate(90deg)' : 'none', flexShrink: 0 }}>
@@ -227,7 +230,7 @@ function AgendaDuJour() {
                           </span>
                         )}
                         {v.facture && (
-                          <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>
+                          <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>
                             {parseFloat(v.facture.montant_total).toFixed(2)} MAD
                           </span>
                         )}
@@ -281,14 +284,14 @@ function AgendaDuJour() {
                                     <span style={{ fontSize: '13px', color: 'var(--ink)', fontWeight: '500', display: 'block' }}>{op.nom_operation}</span>
                                     {op.description && <span style={{ fontSize: '11.5px', color: 'var(--ink-3)' }}>{op.description}</span>}
                                   </div>
-                                  <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '12.5px', fontWeight: '600', color: 'var(--ink)' }}>
+                                  <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '12.5px', fontWeight: '600', color: 'var(--ink)' }}>
                                     {parseFloat(op.cout).toFixed(2)} MAD
                                   </span>
                                 </div>
                               ))}
                               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px 0' }}>
                                 <span style={{ fontSize: '11.5px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total opérations</span>
-                                <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', fontWeight: '700', color: 'var(--ink)' }}>{totalOps.toFixed(2)} MAD</span>
+                                <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '13px', fontWeight: '700', color: 'var(--ink)' }}>{totalOps.toFixed(2)} MAD</span>
                               </div>
                             </div>
                           </div>
@@ -296,10 +299,10 @@ function AgendaDuJour() {
 
                         {v.facture && (
                           <div style={{ display: 'flex', gap: '20px', padding: '12px 14px', background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--line)', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '12px', color: 'var(--ink-3)', fontFamily: '"Geist Mono", monospace' }}>{v.facture.numero_facture}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--ink-3)', fontFamily: '"Inter", sans-serif' }}>{v.facture.numero_facture}</span>
                             <span style={{ fontSize: '11.5px', color: 'var(--ink-3)' }}>Visite: <b style={{ color: 'var(--ink)' }}>{parseFloat(v.facture.frais_visite_base || 0).toFixed(2)} MAD</b></span>
                             <span style={{ fontSize: '11.5px', color: 'var(--ink-3)' }}>Opérations: <b style={{ color: 'var(--ink)' }}>{parseFloat(v.facture.frais_operations || 0).toFixed(2)} MAD</b></span>
-                            <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '15px', fontWeight: '700', color: 'var(--ink)', marginLeft: 'auto' }}>
+                            <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '15px', fontWeight: '700', color: 'var(--ink)', marginLeft: 'auto' }}>
                               {parseFloat(v.facture.montant_total).toFixed(2)} MAD
                             </span>
                           </div>
@@ -320,6 +323,7 @@ function AgendaDuJour() {
             </div>
           )
         )}
+        </AnimateIn>
       </div>
     </Layout>
   )
@@ -327,7 +331,7 @@ function AgendaDuJour() {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400',
     fontSize: '36px',
     letterSpacing: '-0.02em',
@@ -397,7 +401,7 @@ const s = {
     background: 'var(--card)',
   },
   statNum: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontSize: '18px',
     fontWeight: '600',
     lineHeight: 1,
@@ -456,7 +460,7 @@ const s = {
     padding: '0 5px',
     borderRadius: '999px',
     fontSize: '11px',
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontWeight: '600',
   },
   empty: {
@@ -477,7 +481,7 @@ const s = {
     color: 'var(--ink-3)',
     marginBottom: '20px',
   },
-  emptyTitle: { color: 'var(--ink-2)', fontFamily: "'Fraunces', serif", fontSize: '20px', margin: '0 0 6px' },
+  emptyTitle: { color: 'var(--ink-2)', fontFamily: "'Inter', sans-serif", fontSize: '20px', margin: '0 0 6px' },
   emptySub:  { color: 'var(--ink-3)', fontSize: '13.5px', margin: 0 },
   timeline: { display: 'flex', flexDirection: 'column' },
   timeCol: {
@@ -491,7 +495,7 @@ const s = {
     position: 'relative',
   },
   timeLabel: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontSize: '12.5px',
     color: 'var(--ink-3)',
     fontWeight: '500',
@@ -558,12 +562,12 @@ const s = {
     fontSize: '11.5px',
     fontWeight: '500',
   },
-  rdvId: { fontFamily: '"Geist Mono", monospace', fontSize: '11px', color: 'var(--ink-3)' },
+  rdvId: { fontFamily: '"Inter", sans-serif', fontSize: '11px', color: 'var(--ink-3)' },
   patientName: {
     fontSize: '15px',
     fontWeight: '500',
     color: 'var(--ink)',
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     display: 'block',
     marginBottom: '2px',
   },

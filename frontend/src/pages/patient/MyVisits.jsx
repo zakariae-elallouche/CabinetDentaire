@@ -5,6 +5,8 @@ import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import jsPDF from 'jspdf'
 import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_SHORT = ['JANV','FÉVR','MARS','AVR','MAI','JUIN','JUIL','AOÛT','SEPT','OCT','NOV','DÉC']
 const MONTHS_LONG  = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
@@ -198,6 +200,8 @@ function MyVisits() {
     await generateOrdonnancePDF(p, patientName)
   }
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
       <div>
@@ -226,14 +230,13 @@ function MyVisits() {
         </div>
 
         {/* Liste */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)' }}>Chargement...</p>
-        ) : error ? (
-          <EmptyState title="Impossible de charger les visites" sub="Vérifiez votre connexion et réessayez." />
-        ) : filtered.length === 0 ? (
-          <EmptyState title="Aucune visite" sub="Aucune visite enregistrée pour le moment." />
-        ) : (
-          filtered.map((visite) => {
+        <AnimateIn>
+            {error ? (
+              <EmptyState title="Impossible de charger les visites" sub="Vérifiez votre connexion et réessayez." />
+            ) : filtered.length === 0 ? (
+              <EmptyState title="Aucune visite" sub="Aucune visite enregistrée pour le moment." />
+            ) : (
+              filtered.map((visite) => {
             const d     = new Date(visite.date_visite)
             const day   = isNaN(d) ? '—' : d.getDate()
             const month = isNaN(d) ? '—' : MONTHS_SHORT[d.getMonth()]
@@ -309,7 +312,8 @@ function MyVisits() {
               </div>
             )
           })
-        )}
+            )}
+          </AnimateIn>
       </div>
 
       {/* ── Overlay ── */}
@@ -341,7 +345,7 @@ function MyVisits() {
           <>
             {/* Drawer header */}
             <div style={{ padding: '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
                 Visite V-{String(selected.id).padStart(4, '0')}
               </h2>
               <button
@@ -413,7 +417,7 @@ function MyVisits() {
                       </div>
                     ))}
 
-                    <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '20px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
+                    <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '20px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
                       Détails de la facturation
                     </h3>
 
@@ -421,18 +425,18 @@ function MyVisits() {
                       {parseFloat(selected.facture.frais_visite_base || 0) > 0 && (
                         <div style={s.invLine}>
                           <span>Frais de visite de base</span>
-                          <span style={{ fontFamily: '"Geist Mono", monospace' }}>{parseFloat(selected.facture.frais_visite_base).toFixed(2)} MAD</span>
+                          <span style={{ fontFamily: '"Inter", sans-serif' }}>{parseFloat(selected.facture.frais_visite_base).toFixed(2)} MAD</span>
                         </div>
                       )}
                       {(selected.operations || []).map((op, i) => (
                         <div key={i} style={s.invLine}>
                           <span style={{ color: 'var(--ink-2)' }}>· {op.nom_operation || op.nom}</span>
-                          <span style={{ fontFamily: '"Geist Mono", monospace' }}>{parseFloat(op.cout).toFixed(2)} MAD</span>
+                          <span style={{ fontFamily: '"Inter", sans-serif' }}>{parseFloat(op.cout).toFixed(2)} MAD</span>
                         </div>
                       ))}
                       <div style={{ ...s.invLine, borderBottom: 'none', borderTop: '1px solid var(--line-strong)', marginTop: '6px', paddingTop: '14px', fontWeight: '500' }}>
                         <span>Total</span>
-                        <span style={{ fontFamily: '"Geist Mono", monospace' }}>{parseFloat(selected.facture.montant_total || 0).toFixed(2)} MAD</span>
+                        <span style={{ fontFamily: '"Inter", sans-serif' }}>{parseFloat(selected.facture.montant_total || 0).toFixed(2)} MAD</span>
                       </div>
                     </div>
 
@@ -467,7 +471,7 @@ function MyVisits() {
                       </div>
                     )}
 
-                    <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '20px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
+                    <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', margin: '20px 0 10px', paddingBottom: '6px', borderBottom: '1px solid var(--line)' }}>
                       Médicaments prescrits
                     </h3>
 
@@ -511,7 +515,7 @@ function MyVisits() {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
@@ -538,13 +542,13 @@ const s = {
     background: 'var(--line)',
   },
   visitDay: {
-    fontFamily: "'Fraunces', serif", fontSize: '26px', fontWeight: '400',
+    fontFamily: "'Inter', sans-serif", fontSize: '26px', fontWeight: '400',
     lineHeight: '1', letterSpacing: '-0.02em', color: 'var(--ink)',
   },
   visitMonth: { fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-3)', marginTop: '2px' },
   visitYear:  { fontSize: '11px', color: 'var(--ink-3)', marginTop: '1px' },
   visitTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontSize: '14.5px', fontWeight: '500', display: 'block',
     marginBottom: '3px', color: 'var(--ink)',
   },

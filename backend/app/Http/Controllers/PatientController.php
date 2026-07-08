@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Patient;
+use App\Models\Utilisateur;
 use App\Models\Visite;
 use App\Models\Ordonnance;
 use App\Models\Facture;
@@ -14,7 +15,7 @@ class PatientController extends Controller
     {
         $role = $request->user()->role;
 
-        if (!in_array($role, ['secretaire', 'dentiste'])) {
+        if (!in_array($role, ['secretaire', 'dentiste', 'admin_clinique'])) {
             abort(403);
         }
 
@@ -53,8 +54,11 @@ class PatientController extends Controller
             'notes_generales' => 'nullable',
         ]);
 
+        $utilisateur = Utilisateur::findOrFail($patient->utilisateur_id);
+        $utilisateur->update($request->only(['nom', 'prenom']));
+
         $patient->update($request->only([
-            'nom', 'prenom', 'telephone', 'adresse',
+            'telephone', 'adresse',
             'date_naissance', 'sexe', 'contact_urgence', 'notes_generales',
         ]));
 

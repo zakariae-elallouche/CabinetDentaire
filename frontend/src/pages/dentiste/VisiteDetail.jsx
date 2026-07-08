@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
 
@@ -37,7 +39,7 @@ function VisiteDetail() {
 
   if (loading) return (
     <Layout>
-      <p style={{ color: 'var(--ink-3)', padding: '3rem 0', textAlign: 'center' }}>Chargement...</p>
+      <p style={{ color: 'var(--ink-3)', padding: '3rem 0', textAlign: 'center' }}><DonutLoader /></p>
     </Layout>
   )
 
@@ -52,6 +54,7 @@ function VisiteDetail() {
 
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* ── Back + header ── */}
@@ -121,7 +124,7 @@ function VisiteDetail() {
             <div style={s.card}>
               <div style={s.cardHead}>
                 Opérations effectuées
-                <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '11px', color: 'var(--ink-3)', fontWeight: '400', marginLeft: '8px' }}>
+                <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '11px', color: 'var(--ink-3)', fontWeight: '400', marginLeft: '8px' }}>
                   {visite.operations?.length || 0}
                 </span>
               </div>
@@ -135,14 +138,14 @@ function VisiteDetail() {
                           <span style={{ fontSize: '12px', color: 'var(--ink-3)' }}>{op.description}</span>
                         )}
                       </div>
-                      <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '13px', fontWeight: '600', color: 'var(--ink)', flexShrink: 0 }}>
+                      <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '13px', fontWeight: '600', color: 'var(--ink)', flexShrink: 0 }}>
                         {parseFloat(op.cout).toFixed(2)} MAD
                       </span>
                     </div>
                   ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', marginTop: '4px', borderTop: '1px solid var(--line)' }}>
                     <span style={{ fontSize: '12px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total opérations</span>
-                    <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>
+                    <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '14px', fontWeight: '700', color: 'var(--ink)' }}>
                       {totalOps.toFixed(2)} MAD
                     </span>
                   </div>
@@ -170,7 +173,7 @@ function VisiteDetail() {
                   ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px' }}>
                     <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)' }}>Total</span>
-                    <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>
+                    <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>
                       {parseFloat(visite.facture.montant_total).toFixed(2)} MAD
                     </span>
                   </div>
@@ -192,6 +195,7 @@ function VisiteDetail() {
           </div>
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
@@ -212,7 +216,7 @@ const s = {
     fontFamily: 'inherit',
   },
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400',
     fontSize: '32px',
     letterSpacing: '-0.02em',
@@ -224,7 +228,7 @@ const s = {
     color: 'var(--ink-3)',
     fontSize: '13.5px',
     margin: 0,
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
   },
   btnAction: {
     display: 'inline-flex',

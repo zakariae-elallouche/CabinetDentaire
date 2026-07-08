@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignId('dentiste_id')->constrained('dentistes')->onDelete('cascade');
             $table->date('date_delivrance');
             $table->text('instructions_generales')->nullable();
-            $table->enum('statut', ['active', 'expiree', 'annulee'])->default('active');
+            $table->string('statut')->default('active');
             $table->datetime('cree_le')->useCurrent();
             $table->timestamps();
         });

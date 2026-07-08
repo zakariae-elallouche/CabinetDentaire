@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const IcoCal      = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
 const IcoCheck    = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -57,6 +59,8 @@ function DentisteDashboard() {
     { Ico: IcoUsers, label: 'Patients',               sub: 'Historique & dossiers',  path: '/dentiste/patients',           icoStyle: { background: 'var(--success-soft)',color: 'var(--success)' } },
   ]
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
       <div>
@@ -74,9 +78,8 @@ function DentisteDashboard() {
           <div style={{ ...s.heroCard, marginBottom: '22px' }}>
             <div style={s.heroEyebrow}>AGENDA DU JOUR</div>
 
-            {loading ? (
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>Chargement...</p>
-            ) : rdvAujourdhui.length === 0 ? (
+            <AnimateIn>
+              {rdvAujourdhui.length === 0 ? (
               <>
                 <div style={s.heroEmpty}>Aucun rendez-vous aujourd'hui</div>
                 <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', margin: 0 }}>
@@ -131,6 +134,7 @@ function DentisteDashboard() {
                 )}
               </>
             )}
+            </AnimateIn>
           </div>
 
         </div>
@@ -159,7 +163,7 @@ function DentisteDashboard() {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400', fontSize: '40px',
     letterSpacing: '-0.02em', color: 'var(--ink)',
     margin: '0 0 6px', lineHeight: 1.1,
@@ -170,7 +174,7 @@ const s = {
     gap: '20px', marginBottom: '22px',
   },
   heroCard: {
-    background: 'linear-gradient(155deg, #0f4842 0%, #1d6e66 100%)',
+    background: 'linear-gradient(135deg, #57c8cb 0%, #0d9488 100%)',
     borderRadius: 'var(--radius)', padding: '28px 32px', color: 'white',
   },
   heroEyebrow: {
@@ -178,12 +182,12 @@ const s = {
     color: 'rgba(255,255,255,0.55)', marginBottom: '14px', fontWeight: '500',
   },
   heroBig: {
-    fontFamily: "'Fraunces', serif", fontWeight: '300', fontSize: '52px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '300', fontSize: '52px',
     letterSpacing: '-0.02em', lineHeight: 1, color: 'white',
     marginBottom: '16px', display: 'flex', alignItems: 'baseline',
   },
   heroEmpty: {
-    fontFamily: "'Fraunces', serif", fontWeight: '300', fontSize: '28px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '300', fontSize: '28px',
     color: 'rgba(255,255,255,0.85)', marginBottom: '8px', letterSpacing: '-0.01em',
   },
   heroLine: { height: '1px', background: 'rgba(255,255,255,0.15)', marginBottom: '14px' },
@@ -191,7 +195,7 @@ const s = {
     display: 'grid', gridTemplateColumns: '60px 1fr 90px auto',
     gap: '14px', alignItems: 'center', padding: '10px 0',
   },
-  heroTime: { fontFamily: '"Geist Mono", monospace', fontSize: '13px', color: 'rgba(255,255,255,0.7)' },
+  heroTime: { fontFamily: '"Inter", sans-serif', fontSize: '13px', color: 'rgba(255,255,255,0.7)' },
   heroPatient: { fontSize: '14px', fontWeight: '500', color: 'white' },
   heroStatut: { fontSize: '12px', fontWeight: '500' },
   heroBtnVisite: {
@@ -206,7 +210,7 @@ const s = {
     borderRadius: 'var(--radius)', padding: '22px', display: 'flex', flexDirection: 'column',
   },
   cardHead: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' },
-  cardTitle: { fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '17px', letterSpacing: '-0.01em', color: 'var(--ink)' },
+  cardTitle: { fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '17px', letterSpacing: '-0.01em', color: 'var(--ink)' },
   cardSub: { color: 'var(--ink-3)', fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' },
   task: { display: 'flex', gap: '12px', alignItems: 'center', padding: '11px 0' },
   taskIco: { width: '36px', height: '36px', borderRadius: '8px', display: 'grid', placeItems: 'center', flexShrink: 0 },

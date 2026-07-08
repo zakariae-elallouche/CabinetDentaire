@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_FR = ['janv','févr','mars','avr','mai','juin','juil','août','sept','oct','nov','déc']
 const fmtDate = (str) => {
@@ -68,8 +70,11 @@ function ManagePayments() {
   const displayList = (tab === 'attente' ? enAttente : payees)
     .filter(f => !q || pName(f).toLowerCase().includes(q))
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* Header */}
@@ -112,9 +117,7 @@ function ManagePayments() {
         </div>
 
         {/* List */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', padding: '2rem 0' }}>Chargement...</p>
-        ) : displayList.length === 0 ? (
+        {displayList.length === 0 ? (
           <EmptyState
             title={tab === 'attente' ? 'Toutes les factures sont payées' : 'Aucune facture payée'}
             sub={search ? 'Aucun résultat pour cette recherche.' : undefined}
@@ -153,6 +156,7 @@ function ManagePayments() {
           </div>
         )}
       </div>
+      </AnimateIn>
 
       {/* Overlay */}
       <div style={{ position: 'fixed', inset: 0, background: '#1a201f55', backdropFilter: 'blur(4px)', zIndex: 50, opacity: payModal ? 1 : 0, pointerEvents: payModal ? 'auto' : 'none', transition: 'opacity 0.2s' }}
@@ -166,7 +170,7 @@ function ManagePayments() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '20px' }}>
               <div>
                 <h2 style={s.modalTitle}>Enregistrer le paiement</h2>
-                <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '12px', color: 'var(--ink-3)' }}>{payModal.numero_facture}</span>
+                <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '12px', color: 'var(--ink-3)' }}>{payModal.numero_facture}</span>
               </div>
               <button onClick={() => setPayModal(null)} style={s.btnClose}>✕</button>
             </div>
@@ -184,7 +188,7 @@ function ManagePayments() {
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '11px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Montant</span>
-                <span style={{ fontFamily: '"Geist Mono", monospace', fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>{parseFloat(payModal.montant_total).toFixed(2)} MAD</span>
+                <span style={{ fontFamily: '"Inter", sans-serif', fontSize: '18px', fontWeight: '700', color: 'var(--ink)' }}>{parseFloat(payModal.montant_total).toFixed(2)} MAD</span>
               </div>
             </div>
 
@@ -227,14 +231,14 @@ function ManagePayments() {
 }
 
 const s = {
-  pageTitle: { fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: 1.1 },
+  pageTitle: { fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '32px', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: 1.1 },
   pageSub:   { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },
   summaryPill: { display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '999px', border: '1px solid var(--line)', background: 'var(--card)' },
-  summaryNum:  { fontFamily: '"Geist Mono", monospace', fontSize: '18px', fontWeight: '600', lineHeight: 1 },
+  summaryNum:  { fontFamily: '"Inter", sans-serif', fontSize: '18px', fontWeight: '600', lineHeight: 1 },
   summaryLbl:  { fontSize: '12px', color: 'var(--ink-3)' },
   tabPill: { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: '450', fontFamily: 'inherit', border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--ink-2)', cursor: 'pointer', whiteSpace: 'nowrap' },
   tabPillActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: '#fff', fontWeight: '500' },
-  tabBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '18px', height: '18px', padding: '0 5px', borderRadius: '999px', fontSize: '11px', fontFamily: '"Geist Mono", monospace', fontWeight: '500' },
+  tabBadge: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '18px', height: '18px', padding: '0 5px', borderRadius: '999px', fontSize: '11px', fontFamily: '"Inter", sans-serif', fontWeight: '500' },
   searchWrap: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderRadius: '999px', border: '1px solid var(--line)', background: 'var(--card)', flex: 1, maxWidth: '280px', color: 'var(--ink-3)' },
   searchInput: { border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: 'var(--ink)', fontFamily: 'inherit', flex: 1, minWidth: 0 },
   clearBtn: { background: 'none', border: 'none', color: 'var(--ink-3)', cursor: 'pointer', padding: 0, fontSize: '13px' },
@@ -242,13 +246,13 @@ const s = {
   emptyIcon: { width: '64px', height: '64px', borderRadius: '16px', background: 'var(--surface)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', color: 'var(--ink-3)', marginBottom: '16px' },
   itemCard: { display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 'var(--radius)' },
   itemIcon: { width: '40px', height: '40px', borderRadius: '10px', display: 'grid', placeItems: 'center', flexShrink: 0 },
-  patientName: { fontSize: '14.5px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Fraunces', serif", display: 'block', marginBottom: '2px' },
-  factureMeta: { fontSize: '12px', color: 'var(--ink-3)', fontFamily: '"Geist Mono", monospace', display: 'block' },
-  montant: { fontFamily: '"Geist Mono", monospace', fontSize: '15px', fontWeight: '700', color: 'var(--ink)', flexShrink: 0 },
+  patientName: { fontSize: '14.5px', fontWeight: '500', color: 'var(--ink)', fontFamily: "'Inter', sans-serif", display: 'block', marginBottom: '2px' },
+  factureMeta: { fontSize: '12px', color: 'var(--ink-3)', fontFamily: '"Inter", sans-serif', display: 'block' },
+  montant: { fontFamily: '"Inter", sans-serif', fontSize: '15px', fontWeight: '700', color: 'var(--ink)', flexShrink: 0 },
   chip: { display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 12px', borderRadius: '999px', fontSize: '11.5px', fontWeight: '500', flexShrink: 0 },
   btnPay: { display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: '500', background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 },
   modal: { background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 'var(--radius)', padding: '28px', boxShadow: '0 24px 60px rgba(0,0,0,0.18)' },
-  modalTitle: { fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '20px', color: 'var(--ink)', margin: '0 0 4px' },
+  modalTitle: { fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '20px', color: 'var(--ink)', margin: '0 0 4px' },
   btnClose: { width: '32px', height: '32px', borderRadius: '8px', display: 'grid', placeItems: 'center', border: '1px solid var(--line)', background: 'var(--card)', cursor: 'pointer', fontSize: '13px', color: 'var(--ink-2)' },
 }
 

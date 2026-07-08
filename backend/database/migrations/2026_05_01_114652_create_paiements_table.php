@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('secretaire_id')->nullable()->constrained('secretaires')->onDelete('set null');
             $table->decimal('montant_recu', 10, 2);
             $table->date('date_paiement');
-            $table->enum('methode_paiement', ['especes', 'carte', 'virement', 'cheque'])->default('especes');
+            $table->string('methode_paiement')->default('especes');
             $table->string('numero_recu')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

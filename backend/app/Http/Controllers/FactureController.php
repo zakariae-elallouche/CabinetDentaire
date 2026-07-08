@@ -14,7 +14,7 @@ class FactureController extends Controller
 {
     public function index(Request $request)
     {
-        if ($request->user()->role !== 'secretaire') {
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) {
             abort(403);
         }
 
@@ -53,7 +53,7 @@ class FactureController extends Controller
 
     public function payment(Request $request, $id)
     {
-        if ($request->user()->role !== 'secretaire') {
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) {
             abort(403);
         }
 
@@ -80,6 +80,7 @@ class FactureController extends Controller
             'methode_paiement' => $request->methode_paiement,
             'numero_recu'      => $request->numero_recu,
             'notes'            => $request->notes,
+            'tenant_id'        => tenant_id(),
         ]);
 
         AuditService::log('create', 'paiements', $paiement->id, null, $paiement->toArray());
@@ -98,7 +99,7 @@ class FactureController extends Controller
 
     public function report(Request $request)
     {
-        if ($request->user()->role !== 'secretaire') {
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) {
             abort(403);
         }
 

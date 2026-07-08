@@ -133,7 +133,7 @@ export default function DialogProvider() {
             style={{
               padding: '9px 18px', borderRadius: '9px',
               border: 'none',
-              background: dialog.danger ? 'var(--rose)' : 'var(--accent)',
+              background: dialog.danger ? 'var(--rose)' : '#4AB2BB',
               color: '#fff', fontSize: '13.5px',
               fontWeight: '500', cursor: 'pointer',
               fontFamily: 'inherit',

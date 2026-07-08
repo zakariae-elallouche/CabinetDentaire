@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const MONTHS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
 const parseLocalDate = (str) => { const [y,m,d] = str.split('-'); return new Date(+y, +m-1, +d) }
@@ -12,11 +14,8 @@ const fmtTime = (iso) => { const d = new Date(iso); return `${String(d.getHours(
 
 const IcoPlus     = () => <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
 const IcoCal      = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-const IcoList     = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
 const IcoPill     = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="8" rx="4" transform="rotate(-30 12 12)"/><path d="M8.5 6.5l7 7"/></svg>
 const IcoReceipt  = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
-const IcoBell     = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>
-const IcoSparkle  = () => <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>
 const IcoChevronR = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 6 6 6-6 6"/></svg>
 
 const STATUS_MAP = {
@@ -119,12 +118,7 @@ function PatientDashboard() {
     fetchData()
   }, [])
 
-  const quickActions = [
-    { ico: IcoSparkle, label: 'Réserver',        sub: 'Nouveau rendez-vous',   path: '/patient/reserver' },
-    { ico: IcoCal,     label: 'Mes RDV',          sub: 'Voir tous',             path: '/patient/rendez-vous' },
-    { ico: IcoPill,    label: 'Ordonnances',      sub: 'Mes prescriptions',     path: '/patient/ordonnances' },
-    { ico: IcoReceipt, label: 'Factures',         sub: 'Historique & paiements',path: '/patient/factures' },
-  ]
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
@@ -143,49 +137,49 @@ function PatientDashboard() {
         {/* Hero card — next appointment */}
         <div style={s.heroCard}>
           <div style={s.heroEyebrow}>Prochain rendez-vous</div>
-          {loading ? (
-            <div style={{ opacity: 0.7, fontSize: 14 }}>Chargement…</div>
-          ) : nextRdv ? (
-            <>
-              <div style={s.heroDate}>
-                {parseLocalDate(nextRdv.date).getDate()}{' '}
-                <em style={{ fontStyle: 'italic', fontWeight: 400 }}>
-                  {MONTHS_FR[parseLocalDate(nextRdv.date).getMonth()]}
-                </em>
-              </div>
-              <div style={s.heroSub}>
-                {nextRdv.heure ? nextRdv.heure.slice(0, 5) : '—'} · {nextRdv.duration || 30} min
-              </div>
-              <div style={s.heroInfo}>
-                <div>
-                  <small style={s.heroSmall}>Motif</small>
-                  <b style={s.heroBig}>{nextRdv.notes || 'Consultation'}</b>
+          <AnimateIn>
+              {nextRdv ? (
+                <>
+                  <div style={s.heroDate}>
+                    {parseLocalDate(nextRdv.date).getDate()}{' '}
+                    <em style={{ fontStyle: 'italic', fontWeight: 400 }}>
+                      {MONTHS_FR[parseLocalDate(nextRdv.date).getMonth()]}
+                    </em>
+                  </div>
+                  <div style={s.heroSub}>
+                    {nextRdv.heure ? nextRdv.heure.slice(0, 5) : '—'} · {nextRdv.duration || 30} min
+                  </div>
+                  <div style={s.heroInfo}>
+                    <div>
+                      <small style={s.heroSmall}>Motif</small>
+                      <b style={s.heroBig}>{nextRdv.notes || 'Consultation'}</b>
+                    </div>
+                    <div>
+                      <small style={s.heroSmall}>Statut</small>
+                      <b style={s.heroBig}>{STATUS_MAP[nextRdv.statut]?.label || nextRdv.statut}</b>
+                    </div>
+                    <div>
+                      <small style={s.heroSmall}>Référence</small>
+                      <b style={{ ...s.heroBig, fontFamily: '"Inter", monospace' }}>
+                        #{String(nextRdv.id).padStart(4, '0')}
+                      </b>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ paddingTop: 12 }}>
+                  <div style={{ opacity: 0.85, fontSize: 14, marginBottom: 16 }}>
+                    Aucun rendez-vous à venir.
+                  </div>
+                  <button
+                    style={{ ...s.btnHero }}
+                    onClick={() => navigate('/patient/reserver')}
+                  >
+                    <IcoPlus /> Réserver maintenant
+                  </button>
                 </div>
-                <div>
-                  <small style={s.heroSmall}>Statut</small>
-                  <b style={s.heroBig}>{STATUS_MAP[nextRdv.statut]?.label || nextRdv.statut}</b>
-                </div>
-                <div>
-                  <small style={s.heroSmall}>Référence</small>
-                  <b style={{ ...s.heroBig, fontFamily: '"Geist Mono", monospace' }}>
-                    #{String(nextRdv.id).padStart(4, '0')}
-                  </b>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div style={{ paddingTop: 12 }}>
-              <div style={{ opacity: 0.85, fontSize: 14, marginBottom: 16 }}>
-                Aucun rendez-vous à venir.
-              </div>
-              <button
-                style={{ ...s.btnHero }}
-                onClick={() => navigate('/patient/reserver')}
-              >
-                <IcoPlus /> Réserver maintenant
-              </button>
-            </div>
-          )}
+              )}
+            </AnimateIn>
         </div>
 
         {/* Tasks / alerts card */}
@@ -236,20 +230,6 @@ function PatientDashboard() {
         </div>
       </div>
 
-      {/* ── Quick actions grid ── */}
-      <div style={{ ...s.quickGrid, gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)' }}>
-        {quickActions.map(a => {
-          const Ico = a.ico
-          return (
-            <button key={a.path} style={s.quick} onClick={() => navigate(a.path)}>
-              <div style={s.quickIco}><Ico /></div>
-              <b style={s.quickLabel}>{a.label}</b>
-              <small style={s.quickSub}>{a.sub}</small>
-            </button>
-          )
-        })}
-      </div>
-
       {/* ── Recent appointments ── */}
       {recentRdv.length > 0 && (
         <div style={s.card}>
@@ -269,7 +249,7 @@ function PatientDashboard() {
                 <div style={s.apptDate}>{fmtDate(rdv.date)}</div>
               </div>
               <div style={s.apptBody}>
-                <b style={{ fontSize: 14, fontFamily: '"Fraunces", serif', fontWeight: 500 }}>
+                <b style={{ fontSize: 14, fontFamily: '"Inter", serif', fontWeight: 500 }}>
                   {rdv.notes || 'Consultation'}
                 </b>
                 <small style={{ color: 'var(--ink-3)', fontSize: 12.5, display: 'block', marginTop: 2 }}>
@@ -288,7 +268,7 @@ function PatientDashboard() {
 
 const s = {
   title: {
-    fontFamily: '"Fraunces", serif',
+    fontFamily: '"Inter", serif',
     fontWeight: 400, fontSize: 40,
     letterSpacing: '-0.02em',
     margin: '0 0 6px', lineHeight: 1.1,
@@ -303,7 +283,7 @@ const s = {
     gap: 20, marginBottom: 22,
   },
   heroCard: {
-    background: 'linear-gradient(155deg, #0f4842 0%, #1d6e66 100%)',
+    background: 'linear-gradient(135deg, #57c8cb 0%, #0d9488 100%)',
     color: '#fff', borderRadius: 'var(--radius)',
     padding: '28px 30px', position: 'relative', overflow: 'hidden',
   },
@@ -312,7 +292,7 @@ const s = {
     opacity: 0.7, marginBottom: 10,
   },
   heroDate: {
-    fontFamily: '"Fraunces", serif', fontWeight: 300,
+    fontFamily: '"Inter", serif', fontWeight: 300,
     fontSize: 52, letterSpacing: '-0.03em',
     lineHeight: 1, marginBottom: 4,
   },
@@ -341,7 +321,7 @@ const s = {
     justifyContent: 'space-between', marginBottom: 14,
   },
   cardTitle: {
-    fontFamily: '"Fraunces", serif', fontWeight: 500,
+    fontFamily: '"Inter", serif', fontWeight: 500,
     fontSize: 17, letterSpacing: '-0.01em', color: 'var(--ink)',
   },
   cardSub: {
@@ -363,26 +343,6 @@ const s = {
     color: 'var(--accent)', fontSize: 12.5, fontWeight: 500,
     background: 'none', border: 'none', cursor: 'pointer', flexShrink: 0,
   },
-  quickGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: 14, marginBottom: 22,
-  },
-  quick: {
-    background: 'var(--card)', border: '1px solid var(--line)',
-    borderRadius: 'var(--radius)', padding: '18px 18px 20px',
-    textAlign: 'left', cursor: 'pointer',
-    transition: 'all .15s', display: 'flex', flexDirection: 'column',
-  },
-  quickIco: {
-    width: 36, height: 36, borderRadius: 10,
-    background: 'var(--surface)', display: 'grid', placeItems: 'center',
-    color: 'var(--accent)', marginBottom: 14,
-  },
-  quickLabel: {
-    display: 'block', fontFamily: '"Fraunces", serif',
-    fontWeight: 500, fontSize: 16, marginBottom: 2, color: 'var(--ink)',
-  },
-  quickSub: { color: 'var(--ink-3)', fontSize: 12 },
   card: {
     background: 'var(--card)', border: '1px solid var(--line)',
     borderRadius: 'var(--radius)', padding: 22, marginBottom: 20,
@@ -398,7 +358,7 @@ const s = {
   },
   apptTime: { paddingRight: 18, borderRight: '1px solid var(--line)' },
   apptHour: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", monospace',
     fontSize: 20, fontWeight: 500, letterSpacing: '-0.02em', color: 'var(--ink)',
   },
   apptDate: { fontSize: 11, color: 'var(--ink-3)', marginTop: 2, textTransform: 'uppercase', letterSpacing: '0.06em' },

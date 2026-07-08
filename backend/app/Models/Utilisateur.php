@@ -2,15 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Traits\BelongsToTenant;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
 class Utilisateur extends Authenticatable
 {
-    use HasApiTokens;
+    use BelongsToTenant, HasApiTokens, CanResetPassword;
 
     protected $fillable = [
+        'tenant_id',
         'email',
+        'nom',
+        'prenom',
         'password',
         'role',
         'statut',
@@ -18,4 +23,24 @@ class Utilisateur extends Authenticatable
     ];
 
     protected $hidden = ['password'];
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function patient()
+    {
+        return $this->hasOne(Patient::class);
+    }
+
+    public function dentiste()
+    {
+        return $this->hasOne(Dentiste::class);
+    }
+
+    public function secretaire()
+    {
+        return $this->hasOne(Secretaire::class);
+    }
 }

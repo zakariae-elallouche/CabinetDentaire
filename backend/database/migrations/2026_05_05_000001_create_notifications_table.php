@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('utilisateur_id')->constrained('utilisateurs')->onDelete('cascade');
-            $table->enum('type', ['rdv_confirme', 'rdv_rejete', 'paiement_recu']);
+            $table->string('type');
             $table->string('titre');
             $table->text('message');
             $table->json('donnees')->nullable();

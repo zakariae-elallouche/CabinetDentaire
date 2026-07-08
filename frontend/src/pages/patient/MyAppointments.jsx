@@ -6,6 +6,8 @@ import { confirmDialog } from '../../components/DialogProvider'
 import EmptyState from '../../components/EmptyState'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 const StatusIcon = ({ statut, size = 14 }) => {
   const icons = {
@@ -100,6 +102,8 @@ function MyAppointments() {
     return map[statut] || map['EN_ATTENTE']
   }
 
+  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+
   return (
     <Layout>
       <div>
@@ -152,12 +156,11 @@ function MyAppointments() {
         </div>
 
         {/* ─── Liste RDV ─── */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', padding: '2rem 0' }}>Chargement...</p>
-        ) : filtered.length === 0 ? (
-          <EmptyState title="Aucun rendez-vous" sub="Aucun rendez-vous ne correspond à vos critères." />
-        ) : (
-          filtered.map(rdv => {
+        <AnimateIn>
+            {filtered.length === 0 ? (
+              <EmptyState title="Aucun rendez-vous" sub="Aucun rendez-vous ne correspond à vos critères." />
+            ) : (
+              filtered.map(rdv => {
             const chip = chipStyle(rdv.statut)
             return (
               <div key={rdv.id} style={{ ...styles.apptCard, gridTemplateColumns: isMobile ? 'auto 1fr' : 'auto auto 1fr auto', gap: isMobile ? '12px' : '20px', padding: isMobile ? '14px 16px' : '18px 22px' }}>
@@ -207,7 +210,8 @@ function MyAppointments() {
               </div>
             )
           })
-        )}
+            )}
+          </AnimateIn>
       </div>
 
       {/* ─── Overlay ─── */}
@@ -246,7 +250,7 @@ function MyAppointments() {
           <>
             {/* Header */}
             <div style={{ padding: '22px 28px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--surface)' }}>
-              <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
+              <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '22px', margin: 0, letterSpacing: '-0.01em', color: 'var(--ink)', flex: 1 }}>
                 RDV-{String(detail.id).padStart(4, '0')}
               </h2>
               <button
@@ -257,10 +261,7 @@ function MyAppointments() {
 
             {/* Body */}
             <div style={{ padding: '24px 28px', overflow: 'auto', flex: 1 }}>
-              {detailLoading ? (
-                <p style={{ color: 'var(--ink-3)' }}>Chargement...</p>
-              ) : (
-                <>
+              <>
                   {/* Statut chip */}
                   <div style={{ marginBottom: '20px' }}>
                     {(() => {
@@ -293,7 +294,7 @@ function MyAppointments() {
                   {/* Patient info */}
                   {detail.patient && (
                     <>
-                      <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', paddingBottom: '6px', borderBottom: '1px solid var(--line)', margin: '22px 0 0' }}>
+                      <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: '500', fontSize: '15px', color: 'var(--accent)', paddingBottom: '6px', borderBottom: '1px solid var(--line)', margin: '22px 0 0' }}>
                         Patient
                       </h3>
                       {[
@@ -308,7 +309,6 @@ function MyAppointments() {
                     </>
                   )}
                 </>
-              )}
             </div>
 
             {/* Footer */}
@@ -332,7 +332,7 @@ function MyAppointments() {
 
 const styles = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     fontWeight: '400',
     fontSize: '36px',
     letterSpacing: '-0.02em',
@@ -397,7 +397,7 @@ const styles = {
     padding: '0 5px',
     borderRadius: '999px',
     fontSize: '11px',
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontWeight: '500',
   },
   empty: {
@@ -422,7 +422,7 @@ const styles = {
     minWidth: '80px',
   },
   apptHour: {
-    fontFamily: '"Geist Mono", monospace',
+    fontFamily: '"Inter", sans-serif',
     fontSize: '20px',
     fontWeight: '500',
     letterSpacing: '-0.02em',
@@ -443,7 +443,7 @@ const styles = {
   apptTitle: {
     fontSize: '14.5px',
     fontWeight: '500',
-    fontFamily: "'Fraunces', serif",
+    fontFamily: "'Inter', sans-serif",
     display: 'block',
     marginBottom: '3px',
     color: 'var(--ink)',

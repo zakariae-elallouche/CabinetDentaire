@@ -9,6 +9,7 @@ use App\Models\Facture;
 use App\Models\Patient;
 use App\Models\Dentiste;
 use App\Services\AuditService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,6 +53,7 @@ class VisiteController extends Controller
                 'traitement_fourni' => $request->traitement_fourni,
                 'notes'             => $request->notes,
                 'statut'            => 'complete',
+                'tenant_id'         => tenant_id(),
             ]);
 
             $fraisOperations = 0;
@@ -62,6 +64,7 @@ class VisiteController extends Controller
                     'description'    => $op['description'] ?? null,
                     'cout'           => $op['cout'],
                     'date_effectuee' => today(),
+                    'tenant_id'      => tenant_id(),
                 ]);
                 $fraisOperations += $op['cout'];
             }
@@ -77,9 +80,13 @@ class VisiteController extends Controller
                 'frais_operations'  => $fraisOperations,
                 'montant_total'     => $fraisBase + $fraisOperations,
                 'statut'            => 'en_attente',
+                'tenant_id'         => tenant_id(),
             ]);
 
             $rdv->update(['statut' => 'complete']);
+
+            NotificationService::visiteComplete($visite);
+            NotificationService::factureEnAttente($visite->fresh()->facture);
 
             AuditService::log('create', 'visites', $visite->id, null, $visite->toArray());
 
@@ -118,7 +125,10 @@ class VisiteController extends Controller
             if ((int)$id !== $patientId) abort(403);
         }
 
-        $visites = Visite::with(['facture', 'operations', 'ordonnance.medicaments.medicament', 'dentiste'])->where('patient_id', $id)->orderByDesc('date_visite')->get();
+        $visites = Visite::with(['facture', 'operations', 'ordonnance.medicaments.medicament', 'dentiste'])
+            ->where('patient_id', $id)
+            ->orderByDesc('date_visite')
+            ->get();
 
         return response()->json($visites);
     }

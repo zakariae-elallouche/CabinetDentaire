@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // Web routes redirect to SPA; API is the primary interface
+        $response->assertStatus(302);
     }
 }

@@ -4,6 +4,8 @@ import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import api from '../../api'
+import DonutLoader from '../../components/DonutLoader'
+import AnimateIn from '../../components/AnimateIn'
 
 // ─────────────────────────────────────────────
 //  Patients List View
@@ -30,6 +32,14 @@ function PatientsList() {
 
   const initials = (name = '') =>
     name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'
+
+  if (loading) return (
+    <Layout>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>
+        <DonutLoader />
+      </div>
+    </Layout>
+  )
 
   return (
     <Layout>
@@ -65,9 +75,8 @@ function PatientsList() {
         </div>
 
         {/* List */}
-        {loading ? (
-          <p style={{ color: 'var(--ink-3)', fontSize: '14px' }}>Chargement...</p>
-        ) : filtered.length === 0 ? (
+        <AnimateIn>
+          {filtered.length === 0 ? (
           <EmptyState title="Aucun patient trouvé" sub="Essayez un autre terme de recherche." />
         ) : (
           <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))' }}>
@@ -116,6 +125,7 @@ function PatientsList() {
             ))}
           </div>
         )}
+        </AnimateIn>
       </div>
     </Layout>
   )
@@ -157,7 +167,7 @@ function PatientDetail() {
 
   if (loading) return (
     <Layout>
-      <p style={{ color: 'var(--ink-3)', fontSize: '14px', padding: '40px 0' }}>Chargement...</p>
+      <p style={{ color: 'var(--ink-3)', fontSize: '14px', padding: '40px 0' }}><DonutLoader /></p>
     </Layout>
   )
 
@@ -170,6 +180,7 @@ function PatientDetail() {
 
   return (
     <Layout>
+      <AnimateIn>
       <div>
 
         {/* Back */}
@@ -278,7 +289,7 @@ function PatientDetail() {
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: '"Geist Mono", monospace', fontWeight: '600', fontSize: '15px', color: 'var(--accent)' }}>
+                        <div style={{ fontFamily: '"Inter", sans-serif', fontWeight: '600', fontSize: '15px', color: 'var(--accent)' }}>
                           {visite.facture?.montant_total ?? '—'} MAD
                         </div>
                         <span style={{
@@ -352,6 +363,7 @@ function PatientDetail() {
 
         </div>
       </div>
+      </AnimateIn>
     </Layout>
   )
 }
@@ -366,7 +378,7 @@ function PatientHistory() {
 
 const s = {
   pageTitle: {
-    fontFamily: "'Fraunces', serif", fontWeight: '400', fontSize: '36px',
+    fontFamily: "'Inter', sans-serif", fontWeight: '400', fontSize: '36px',
     letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px', lineHeight: '1.1',
   },
   pageSub: { color: 'var(--ink-2)', fontSize: '14px', margin: 0 },

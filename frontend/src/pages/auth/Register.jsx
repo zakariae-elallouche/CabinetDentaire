@@ -1,26 +1,74 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import api from '../../api'
+import AnimateIn from '../../components/AnimateIn'
+import DonutLoader from '../../components/DonutLoader'
+
+
+const P = '#0d9488'
+const P_HOVER = '#0f766e'
+const ACCENT = '#57c8cb'
+
+const inputBase = {
+  width: '100%',
+  padding: '13px 15px',
+  border: '1.5px solid #e2e8f0',
+  borderRadius: 11,
+  fontSize: 15,
+  background: '#fff',
+  color: '#191919',
+  outline: 'none',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+  transition: 'border-color 0.2s, box-shadow 0.2s',
+}
+
+const btnBase = {
+  width: '100%',
+  padding: '14px',
+  background: P,
+  color: '#fff',
+  border: 'none',
+  borderRadius: 11,
+  fontSize: 15,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  letterSpacing: '0.02em',
+  transition: 'all 0.2s',
+  boxShadow: '0 4px 14px rgba(13,148,136,0.3)',
+}
 
 function Register() {
+  const [searchParams] = useSearchParams()
+  const clinicSlug = searchParams.get('slug')
+  const [clinic, setClinic] = useState(null)
+  const [clinicLoading, setClinicLoading] = useState(!!clinicSlug)
   const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-    telephone: '',
-    adresse: '',
-    date_naissance: '',
-    sexe: 'masculin',
-    contact_urgence: '',
+    nom: '', prenom: '', email: '', password: '',
+    password_confirmation: '', telephone: '', adresse: '',
+    date_naissance: '', sexe: 'masculin', contact_urgence: '',
+    slug: clinicSlug || '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
+
+  useEffect(() => { setMounted(true) }, [])
+
+  useEffect(() => {
+    if (clinicSlug) {
+      api.get(`/clinics/${clinicSlug}`)
+        .then(r => setClinic(r.data))
+        .catch(() => setClinic(null))
+        .finally(() => setClinicLoading(false))
+    }
+  }, [clinicSlug])
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -33,501 +81,306 @@ function Register() {
     try {
       await register(formData)
       navigate('/patient/dashboard')
-    } catch {
-      setError("Erreur lors de l'inscription. Vérifiez vos informations.")
+    } catch (err) {
+      const data = err.response?.data
+      if (data?.errors) {
+        setError(Object.values(data.errors).flat().join(' · '))
+      } else if (data?.message) {
+        setError(data.message)
+      } else {
+        setError("Erreur lors de l'inscription. Vérifiez vos informations.")
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const FormRow = ({ children }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>{children}</div>
-  )
-
-  if (isMobile) return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', padding: '32px 20px 60px', overflowY: 'auto' }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-        <img src="/HZLogo.png" alt="HZ" style={{ width: 44, height: 44, objectFit: 'contain' }} />
-        <div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>HZ Dentaire</div>
-          <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Cabinet Dentaire</div>
-        </div>
-      </div>
-
-      <h2 style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontSize: '1.7rem', letterSpacing: '-0.02em', color: 'var(--ink)', margin: '0 0 6px' }}>Créer un compte 🦷</h2>
-      <p style={{ color: 'var(--ink-3)', fontSize: '14px', margin: '0 0 24px' }}>Remplissez vos informations personnelles</p>
-
-      {error && <div style={styles.errorBox}>❌ {error}</div>}
-
-      <form onSubmit={handleSubmit}>
-        <FormRow>
-          <div style={styles.formGroup}><label style={styles.label}>Nom</label><input style={styles.input} type="text" name="nom" placeholder="Benali" value={formData.nom} onChange={handleChange} required /></div>
-          <div style={styles.formGroup}><label style={styles.label}>Prénom</label><input style={styles.input} type="text" name="prenom" placeholder="Ahmed" value={formData.prenom} onChange={handleChange} required /></div>
-        </FormRow>
-        <div style={styles.formGroup}><label style={styles.label}>Email</label><input style={styles.input} type="email" name="email" placeholder="exemple@email.com" value={formData.email} onChange={handleChange} required /></div>
-        <div style={styles.formGroup}><label style={styles.label}>Mot de passe</label><input style={styles.input} type="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleChange} required minLength={6} /></div>
-        <div style={styles.formGroup}><label style={styles.label}>Confirmer mot de passe</label><input style={styles.input} type="password" name="password_confirmation" placeholder="••••••••" value={formData.password_confirmation} onChange={handleChange} required minLength={6} /></div>
-        <div style={styles.formGroup}><label style={styles.label}>Téléphone</label><input style={styles.input} type="tel" name="telephone" placeholder="+212 6 xx-xxx-xxx" value={formData.telephone} onChange={handleChange} required /></div>
-        <FormRow>
-          <div style={styles.formGroup}><label style={styles.label}>Date de naissance</label><input style={styles.input} type="date" name="date_naissance" value={formData.date_naissance} onChange={handleChange} required /></div>
-          <div style={styles.formGroup}><label style={styles.label}>Sexe</label><select style={styles.input} name="sexe" value={formData.sexe} onChange={handleChange}><option value="masculin">Masculin</option><option value="feminin">Féminin</option></select></div>
-        </FormRow>
-        <div style={styles.formGroup}><label style={styles.label}>Adresse</label><input style={styles.input} type="text" name="adresse" placeholder="123 Rue, Ville" value={formData.adresse} onChange={handleChange} /></div>
-        <button type="submit" style={styles.btnSubmit} disabled={loading}>{loading ? 'Inscription...' : 'Créer mon compte →'}</button>
-      </form>
-
-      <p style={{ ...styles.switchText, marginTop: '20px' }}>
-        Déjà un compte ?{' '}<Link to="/login" style={styles.link}>Se connecter</Link>
-      </p>
+  const input = (name, placeholder, type = 'text', opts = {}) => (
+    <div style={{ marginBottom: opts.compact ? 0 : 18 }}>
+      {opts.label && (
+        <label style={{
+          display: 'block', fontSize: 13, fontWeight: 500,
+          color: '#191919', marginBottom: 7,
+        }}>{opts.label}</label>
+      )}
+      {type === 'select' ? (
+        <select
+          name={name} value={formData[name]} onChange={handleChange}
+          style={inputBase}
+        >
+          {opts.options?.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={type} name={name} placeholder={placeholder}
+          value={formData[name]} onChange={handleChange}
+          required={opts.required !== false} minLength={opts.minLength}
+          style={inputBase}
+          onFocus={e => { e.target.style.borderColor = P; e.target.style.boxShadow = '0 0 0 3px rgba(13,148,136,0.15)' }}
+          onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none' }}
+        />
+      )}
     </div>
   )
 
-  return (
-    <div style={styles.page}>
+  const fieldRow = (children) => (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+      gap: isMobile ? 0 : 16,
+    }}>
+      {children}
+    </div>
+  )
 
-      <div style={styles.bgImage} />
-      <div style={styles.bgOverlay} />
-
-      {/* Logo top-left */}
-      <div style={styles.logoTop} className="auth-logo-top">
-        <img src="/HZLogo.png" alt="HZ" style={{ width: 46, height: 46, objectFit: 'contain', flexShrink: 0, filter: 'brightness(0) invert(1)' }} />
-        <div>
-          <div style={styles.logoName}>HZ Dentaire</div>
-          <div style={styles.logoSub}>Cabinet Dentaire</div>
-        </div>
+  const clinicBanner = clinic && (
+    <div style={{
+      padding: '14px 18px', background: '#f0fdfa', borderRadius: 12,
+      marginBottom: 20, border: '1px solid #ccfbf1',
+      animation: 'slideUp 0.3s ease',
+    }}>
+      <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#0d9488', fontWeight: 500, marginBottom: 2 }}>
+        Vous créez un compte pour
       </div>
+      <div style={{ fontWeight: 600, fontSize: 16, color: '#0d9488' }}>{clinic.nom_clinique}</div>
+      {clinic.ville && <div style={{ fontSize: 12, color: '#6a6a6a', marginTop: 2 }}>{clinic.ville}</div>}
+    </div>
+  )
 
-      {/* Left slogan */}
-      <div style={styles.sloganBox} className="login-slogan">
-        <div style={styles.sloganTag}>✦ Rejoignez-nous</div>
-        <h1 style={styles.slogan}>
-          Créez votre<br />
-          <em style={styles.sloganEm}>espace santé.</em>
-        </h1>
-        <p style={styles.sloganSub}>
-          Inscrivez-vous en quelques minutes et bénéficiez<br />
-          d'un suivi dentaire personnalisé et de qualité.
-        </p>
-        <div style={styles.features}>
-          {[
-            'Réservation de rendez-vous en ligne',
-            'Accès à votre dossier médical',
-            'Consultez vos ordonnances',
-            'Suivi de vos factures',
-          ].map((f) => (
-            <div key={f} style={styles.featureItem}>
-              <span style={styles.featureDot}>✓</span>
-              <span>{f}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+  const formFields = (
+    <>
+      {fieldRow(
+        <>
+          {input('nom', 'Benali', 'text', { label: 'Nom' })}
+          {input('prenom', 'Ahmed', 'text', { label: 'Prénom' })}
+        </>
+      )}
+      {input('email', 'exemple@email.com', 'email', { label: 'Adresse email' })}
+      {fieldRow(
+        <>
+          {input('password', '••••••••', 'password', { label: 'Mot de passe', minLength: 6 })}
+          {input('password_confirmation', '••••••••', 'password', { label: 'Confirmer', minLength: 6 })}
+        </>
+      )}
+      {input('telephone', '+212 6 xx-xxx-xxx', 'tel', { label: 'Téléphone' })}
+      {fieldRow(
+        <>
+          {input('date_naissance', '', 'date', { label: 'Date de naissance' })}
+          {input('sexe', '', 'select', { label: 'Sexe', options: [{ value: 'masculin', label: 'Masculin' }, { value: 'feminin', label: 'Féminin' }] })}
+        </>
+      )}
+      {input('adresse', '123 Rue, Ville', 'text', { label: 'Adresse', required: false })}
+    </>
+  )
 
-      {/* Right form panel */}
-      <div style={styles.formPanel} className="login-panel">
-        <div style={styles.formInner}>
+  if (clinicLoading) return <div style={{ padding: 40, textAlign: 'center' }}><DonutLoader /></div>
 
-          {/* Mobile logo */}
-          <div className="auth-mobile-logo" style={{ display: 'none', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-            <img src="/HZLogo.png" alt="HZ Dentaire" style={{ width: 44, height: 44, objectFit: 'contain' }} />
+  if (isMobile) {
+    return (
+      <AnimateIn>
+      <div style={{
+        minHeight: '100dvh',
+        background: `url('/background-dentaspace.png') center/cover no-repeat`,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        padding: 20,
+        animation: 'fadeIn 0.3s ease',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'rgba(0,0,0,0.35)',
+        }} />
+
+        <div style={{
+          position: 'relative', zIndex: 1,
+          animation: mounted ? 'slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 11, marginBottom: 28,
+            justifyContent: 'center',
+          }}>
+            <img src="/DentASpace-Logo.png" alt="Dent A Space"
+              style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 9 }} />
             <div>
-              <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: 18, color: 'var(--ink)' }}>HZ Dentaire</div>
-              <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Cabinet Dentaire</div>
+              <div style={{ fontWeight: 600, fontSize: 16, color: '#fff' }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.05em' }}>CABINET DENTAIRE</div>
             </div>
           </div>
 
-          <div style={styles.formHeader}>
-            <h2 style={styles.formTitle}>Créer un compte</h2>
-            <p style={styles.formSub}>Remplissez vos informations personnelles</p>
+          <div style={{
+            background: '#fff',
+            borderRadius: 16, padding: '31px 22px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+          }}>
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{
+                fontSize: 22, fontWeight: 600, color: '#191919',
+                margin: '0 0 7px', letterSpacing: '-0.02em',
+              }}>Créer un compte</h2>
+              <p style={{ color: '#6a6a6a', fontSize: 14, margin: 0 }}>
+                Remplissez vos informations personnelles
+              </p>
+            </div>
+
+            {clinicBanner}
+            {error && <div style={{
+              background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
+              padding: '11px 15px', borderRadius: 11, fontSize: '14px', marginBottom: 18,
+              animation: 'slideUp 0.3s ease',
+            }}>{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              {formFields}
+              <button
+                type="submit" disabled={loading}
+                style={{
+                  ...btnBase,
+                  background: loading ? '#94d3d5' : P,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  boxShadow: loading ? 'none' : '0 4px 14px rgba(13,148,136,0.3)',
+                }}
+                onMouseEnter={e => {
+                  if (!loading) {
+                    e.target.style.background = P_HOVER
+                    e.target.style.boxShadow = '0 6px 20px rgba(13,148,136,0.4)'
+                    e.target.style.transform = 'translateY(-1px)'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!loading) {
+                    e.target.style.background = P
+                    e.target.style.boxShadow = '0 4px 14px rgba(13,148,136,0.3)'
+                    e.target.style.transform = 'none'
+                  }
+                }}
+              >
+                {loading ? 'Inscription...' : 'Créer mon compte'}
+              </button>
+            </form>
+
+            <p style={{ textAlign: 'center', fontSize: '14px', color: '#6a6a6a', margin: '24px 0 0' }}>
+              Déjà un compte ?{' '}
+              <Link to="/login" style={{ color: P, textDecoration: 'none', fontWeight: 500 }}
+                onMouseEnter={e => e.target.style.color = P_HOVER}
+                onMouseLeave={e => e.target.style.color = P}
+              >Se connecter</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+      </AnimateIn>
+    )
+  }
+
+  return (
+    <AnimateIn>
+    <div style={{
+      minHeight: '100vh',
+      background: `url('/background-dentaspace.png') center/cover no-repeat`,
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      animation: 'fadeIn 0.3s ease',
+    }}>
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'rgba(0,0,0,0.35)',
+      }} />
+
+      <div style={{
+        display: 'flex',
+        background: '#fff',
+        borderRadius: 20,
+        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+        overflow: 'hidden',
+        maxWidth: 540,
+        width: '100%',
+        position: 'relative',
+        zIndex: 1,
+        animation: mounted ? 'slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both' : 'none',
+      }}>
+        <div style={{
+          flex: 1,
+          padding: '48px 44px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 11, marginBottom: 32,
+          }}>
+            <img src="/DentASpace-Logo.png" alt="Dent A Space"
+              style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 10 }} />
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 17 }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>
+              <div style={{ fontSize: 11, color: '#6a6a6a', letterSpacing: '0.05em' }}>CABINET DENTAIRE</div>
+            </div>
           </div>
 
-          {error && <div style={styles.errorBox}>❌ {error}</div>}
+          <div style={{ marginBottom: 24 }}>
+            <h2 style={{
+              fontSize: 26, fontWeight: 600, color: '#191919',
+              margin: '0 0 7px', letterSpacing: '-0.02em',
+            }}>Créer un compte</h2>
+            <p style={{ color: '#6a6a6a', fontSize: 15, margin: 0 }}>
+              Remplissez vos informations personnelles
+            </p>
+          </div>
+
+          {clinicBanner}
+          {error && <div style={{
+            background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
+            padding: '11px 15px', borderRadius: 11, fontSize: '14px', marginBottom: 18,
+            animation: 'slideUp 0.3s ease',
+          }}>{error}</div>}
 
           <form onSubmit={handleSubmit}>
-
-            <div style={styles.row} className="auth-form-row">
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Nom</label>
-                <input
-                  style={styles.input}
-                  type="text"
-                  name="nom"
-                  placeholder="Benali"
-                  value={formData.nom}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Prénom</label>
-                <input
-                  style={styles.input}
-                  type="text"
-                  name="prenom"
-                  placeholder="Ahmed"
-                  value={formData.prenom}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Adresse email</label>
-              <input
-                style={styles.input}
-                type="email"
-                name="email"
-                placeholder="exemple@email.com"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div style={styles.row} className="auth-form-row">
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Mot de passe</label>
-                <input
-                  style={styles.input}
-                  type="password"
-                  name="password"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Confirmer mot de passe</label>
-                <input
-                  style={styles.input}
-                  type="password"
-                  name="password_confirmation"
-                  placeholder="••••••••"
-                  value={formData.password_confirmation}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-
-            <div style={styles.row} className="auth-form-row">
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Téléphone</label>
-                <input
-                  style={styles.input}
-                  type="tel"
-                  name="telephone"
-                  placeholder="+212 6 xx-xxx-xxx"
-                  value={formData.telephone}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Sexe</label>
-                <select
-                  style={styles.input}
-                  name="sexe"
-                  value={formData.sexe}
-                  onChange={handleChange}
-                >
-                  <option value="masculin">Masculin</option>
-                  <option value="feminin">Féminin</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={styles.row} className="auth-form-row">
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Date de naissance</label>
-                <input
-                  style={styles.input}
-                  type="date"
-                  name="date_naissance"
-                  value={formData.date_naissance}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Contact urgence</label>
-                <input
-                  style={styles.input}
-                  type="tel"
-                  name="contact_urgence"
-                  placeholder="+212 6 xx-xxx-xxx"
-                  value={formData.contact_urgence}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Adresse</label>
-              <input
-                style={styles.input}
-                type="text"
-                name="adresse"
-                placeholder="123 Rue, Ville"
-                value={formData.adresse}
-                onChange={handleChange}
-              />
-            </div>
-
-            <button type="submit" style={styles.btnSubmit} disabled={loading}>
-              {loading ? 'Inscription...' : "Créer mon compte →"}
+            {formFields}
+            <button
+              type="submit" disabled={loading}
+              style={{
+                ...btnBase,
+                background: loading ? '#94d3d5' : P,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                boxShadow: loading ? 'none' : '0 4px 14px rgba(13,148,136,0.3)',
+              }}
+              onMouseEnter={e => {
+                if (!loading) {
+                  e.target.style.background = P_HOVER
+                  e.target.style.boxShadow = '0 6px 20px rgba(13,148,136,0.4)'
+                  e.target.style.transform = 'translateY(-1px)'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!loading) {
+                  e.target.style.background = P
+                  e.target.style.boxShadow = '0 4px 14px rgba(13,148,136,0.3)'
+                  e.target.style.transform = 'none'
+                }
+              }}
+            >
+              {loading ? 'Inscription...' : 'Créer mon compte'}
             </button>
           </form>
 
-          <p style={styles.switchText}>
+          <p style={{ textAlign: 'center', fontSize: '14px', color: '#6a6a6a', margin: '24px 0 0' }}>
             Déjà un compte ?{' '}
-            <Link to="/login" style={styles.link}>Se connecter</Link>
+            <Link to="/login" style={{ color: P, textDecoration: 'none', fontWeight: 500 }}
+              onMouseEnter={e => e.target.style.color = P_HOVER}
+              onMouseLeave={e => e.target.style.color = P}
+            >Se connecter</Link>
           </p>
-
         </div>
       </div>
-
     </div>
+    </AnimateIn>
   )
-}
-
-const styles = {
-  page: {
-    minHeight: '100vh',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'stretch',
-  },
-  bgImage: {
-    position: 'fixed',
-    inset: 0,
-    backgroundImage: 'url(https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1400&q=90)',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    zIndex: 0,
-  },
-  bgOverlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'linear-gradient(110deg, rgba(10,40,36,0.82) 0%, rgba(10,40,36,0.65) 50%, rgba(10,40,36,0.15) 100%)',
-    zIndex: 1,
-  },
-  logoTop: {
-    position: 'fixed',
-    top: '2rem',
-    left: '2.5rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    zIndex: 10,
-  },
-  logoBox: {
-    width: '46px',
-    height: '46px',
-    borderRadius: '13px',
-    background: 'rgba(255,255,255,0.15)',
-    backdropFilter: 'blur(10px)',
-    border: '1.5px solid rgba(255,255,255,0.3)',
-    display: 'grid',
-    placeItems: 'center',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-  },
-  logoHZ: {
-    fontFamily: "'Fraunces', serif",
-    fontWeight: '600',
-    fontSize: '18px',
-    color: 'white',
-    letterSpacing: '-0.02em',
-  },
-  logoName: {
-    fontFamily: "'Fraunces', serif",
-    fontWeight: '600',
-    fontSize: '17px',
-    color: 'white',
-    letterSpacing: '-0.01em',
-    textShadow: '0 2px 8px rgba(0,0,0,0.3)',
-  },
-  logoSub: {
-    fontSize: '10px',
-    letterSpacing: '0.15em',
-    textTransform: 'uppercase',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  sloganBox: {
-    position: 'relative',
-    zIndex: 5,
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    padding: '8rem 3rem 3rem 3.5rem',
-    maxWidth: '55%',
-  },
-  sloganTag: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '8px',
-    background: 'rgba(255,255,255,0.1)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: '999px',
-    padding: '6px 16px',
-    fontSize: '12px',
-    color: 'rgba(255,255,255,0.9)',
-    letterSpacing: '0.04em',
-    marginBottom: '1.5rem',
-    width: 'fit-content',
-  },
-  slogan: {
-    fontFamily: "'Fraunces', serif",
-    fontWeight: '300',
-    fontSize: '52px',
-    lineHeight: '1.1',
-    color: 'white',
-    margin: '0 0 1.25rem',
-    letterSpacing: '-0.02em',
-    textShadow: '0 4px 20px rgba(0,0,0,0.3)',
-  },
-  sloganEm: {
-    fontStyle: 'italic',
-    fontWeight: '400',
-    color: '#7dd3c8',
-  },
-  sloganSub: {
-    fontSize: '15px',
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: '1.7',
-    margin: '0 0 2rem',
-    maxWidth: '42ch',
-  },
-  features: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  featureItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: '14px',
-  },
-  featureDot: {
-    width: '22px',
-    height: '22px',
-    borderRadius: '50%',
-    background: 'rgba(125,211,200,0.25)',
-    border: '1px solid rgba(125,211,200,0.5)',
-    display: 'grid',
-    placeItems: 'center',
-    fontSize: '11px',
-    color: '#7dd3c8',
-    flexShrink: 0,
-  },
-  formPanel: {
-    position: 'relative',
-    zIndex: 5,
-    width: '460px',
-    flexShrink: 0,
-    background: 'var(--bg, #f4f1ea)',
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    padding: '2.5rem 2rem',
-    boxShadow: '-20px 0 80px rgba(0,0,0,0.25)',
-    overflowY: 'auto',
-    maxHeight: '100vh',
-  },
-  formInner: {
-    width: '100%',
-    maxWidth: '380px',
-  },
-  formHeader: {
-    marginBottom: '1.75rem',
-  },
-  formTitle: {
-    fontFamily: "'Fraunces', serif",
-    fontWeight: '400',
-    fontSize: '1.9rem',
-    letterSpacing: '-0.02em',
-    color: 'var(--ink, #1a201f)',
-    margin: '0 0 6px',
-  },
-  formSub: {
-    color: 'var(--ink-3, #7d8682)',
-    fontSize: '14px',
-    margin: 0,
-  },
-  errorBox: {
-    background: '#FEF2F2',
-    border: '1px solid #FECACA',
-    color: '#991B1B',
-    padding: '10px 14px',
-    borderRadius: '8px',
-    fontSize: '13px',
-    marginBottom: '1rem',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '12px',
-  },
-  formGroup: {
-    marginBottom: '1.1rem',
-  },
-  label: {
-    display: 'block',
-    fontSize: '11px',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    color: 'var(--ink-3, #7d8682)',
-    marginBottom: '6px',
-    fontWeight: '500',
-  },
-  input: {
-    width: '100%',
-    padding: '11px 14px',
-    border: '1px solid var(--line, #e3ddd0)',
-    borderRadius: '10px',
-    fontSize: '14px',
-    background: 'var(--card, #ffffff)',
-    color: 'var(--ink, #1a201f)',
-    outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-    transition: 'border-color 0.15s, box-shadow 0.15s',
-  },
-  btnSubmit: {
-    width: '100%',
-    padding: '13px',
-    background: 'var(--accent, #0f4842)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '10px',
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    marginTop: '0.5rem',
-    letterSpacing: '0.02em',
-    transition: 'all 0.15s',
-  },
-  switchText: {
-    textAlign: 'center',
-    fontSize: '13px',
-    color: 'var(--ink-3, #7d8682)',
-    margin: '1.25rem 0 0',
-  },
-  link: {
-    color: 'var(--accent, #0f4842)',
-    textDecoration: 'none',
-    fontWeight: '500',
-  },
 }
 
 export default Register

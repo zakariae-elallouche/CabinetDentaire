@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('telephone')->nullable();
             $table->string('adresse')->nullable();
             $table->date('date_naissance')->nullable();
-            $table->enum('sexe', ['masculin', 'feminin'])->nullable();
+            $table->string('sexe')->nullable();
             $table->string('contact_urgence')->nullable();
             $table->date('date_inscription')->useCurrent();
             $table->text('notes_generales')->nullable();

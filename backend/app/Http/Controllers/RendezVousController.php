@@ -17,7 +17,6 @@ class RendezVousController extends Controller
     {
         $user = $request->user();
 
-        // Auto-cancel past RDVs
         RendezVous::where('statut', 'confirme')
             ->where('date_heure', '<', Carbon::now()->subHours(2))
             ->update(['statut' => 'annule', 'notes' => 'Patient absent au rendez-vous']);
@@ -36,7 +35,7 @@ class RendezVousController extends Controller
                 ->where('dentiste_id', Dentiste::where('utilisateur_id', $user->id)->value('id'))
                 ->orderBy('date_heure')->get(),
 
-            'secretaire' => RendezVous::with('patient')->orderByDesc('date_heure')->get(),
+            'secretaire', 'admin_clinique' => RendezVous::with('patient')->orderByDesc('date_heure')->get(),
 
             default => abort(403),
         };
@@ -49,14 +48,19 @@ class RendezVousController extends Controller
         if ($request->user()->role !== 'patient') abort(403);
 
         $request->validate([
-            'date'   => 'required|date_format:Y-m-d',
-            'heure'  => 'required|date_format:H:i',
-            'duree'  => 'nullable|integer|min:15',
-            'raison' => 'nullable|string',
+            'date'        => 'required|date_format:Y-m-d',
+            'heure'       => 'required|date_format:H:i',
+            'duree'       => 'nullable|integer|min:15',
+            'raison'      => 'nullable|string',
+            'dentiste_id' => 'nullable|integer|exists:dentistes,id',
         ]);
 
         $patientId  = Patient::where('utilisateur_id', $request->user()->id)->value('id');
-        $dentisteId = Dentiste::value('id');
+
+        $dentisteId = $request->dentiste_id ?? Dentiste::value('id');
+        if (!$dentisteId) {
+            return response()->json(['message' => 'Aucun dentiste disponible pour le moment. Veuillez réessayer plus tard.'], 422);
+        }
 
         $rdv = RendezVous::create([
             'patient_id'  => $patientId,
@@ -65,10 +69,12 @@ class RendezVousController extends Controller
             'duree'       => $request->duree ?? 30,
             'raison'      => $request->raison,
             'statut'      => 'en_attente',
+            'tenant_id'   => tenant_id(),
         ]);
 
         AuditService::log('create', 'rendez_vous', $rdv->id, null, $rdv->toArray());
         NotificationService::rdvDemande($rdv);
+        NotificationService::nouveauRdvDentiste($rdv, 'demande');
 
         return response()->json($rdv->load('patient')->toFrontend(), 201);
     }
@@ -110,7 +116,7 @@ class RendezVousController extends Controller
 
     public function confirm(Request $request, $id)
     {
-        if ($request->user()->role !== 'secretaire') abort(403);
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) abort(403);
 
         $rdv          = RendezVous::with('patient')->findOrFail($id);
         $secretaireId = Secretaire::where('utilisateur_id', $request->user()->id)->value('id');
@@ -123,6 +129,7 @@ class RendezVousController extends Controller
         ]);
 
         NotificationService::rdvConfirme($rdv->fresh());
+        NotificationService::nouveauRdvDentiste($rdv->fresh(), 'confirme');
         AuditService::log('update', 'rendez_vous', $rdv->id, $old, $rdv->fresh()->toArray());
 
         return response()->json($rdv->fresh()->load('patient')->toFrontend());
@@ -130,7 +137,7 @@ class RendezVousController extends Controller
 
     public function reject(Request $request, $id)
     {
-        if ($request->user()->role !== 'secretaire') abort(403);
+        if (!in_array($request->user()->role, ['secretaire', 'admin_clinique'], true)) abort(403);
 
         $request->validate(['raison' => 'required|string']);
 
@@ -150,7 +157,27 @@ class RendezVousController extends Controller
         $request->validate(['date' => 'required|date_format:Y-m-d']);
 
         $date       = $request->date;
-        $dentisteId = Dentiste::value('id');
+        $dentisteId = $request->dentiste_id ?? Dentiste::value('id');
+
+        if (!$dentisteId) {
+            return response()->json(['date' => $date, 'slots' => [], 'horaires' => [], 'frais_visite' => $fraisVisite]);
+        }
+
+        $tenant   = $request->user()->tenant;
+        $horaires = $tenant->horaires ?? self::defaultHoraires();
+        $fraisVisite = (float)($tenant->frais_visite ?? 200);
+
+        $dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        $carbon   = Carbon::parse($date);
+        $dayKey   = $dayNames[(int)$carbon->format('w')];
+        $dayHoraire = $horaires[$dayKey] ?? ['actif' => false];
+
+        if (!($dayHoraire['actif'] ?? false)) {
+            return response()->json(['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
+        }
+
+        $debut = $dayHoraire['debut'] ?? '09:00';
+        $fin   = $dayHoraire['fin'] ?? '18:00';
 
         $taken = RendezVous::where('dentiste_id', $dentisteId)
             ->whereDate('date_heure', $date)
@@ -161,8 +188,12 @@ class RendezVousController extends Controller
 
         $now   = Carbon::now();
         $slots = [];
-        $start = Carbon::parse("$date 09:00");
-        $end   = Carbon::parse("$date 18:00");
+        $start = Carbon::parse("$date $debut");
+        $end   = Carbon::parse("$date $fin");
+
+        if ($start->gte($end)) {
+            return response()->json(['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
+        }
 
         while ($start < $end) {
             $slot = $start->format('H:i');
@@ -170,7 +201,21 @@ class RendezVousController extends Controller
             $start->addMinutes(30);
         }
 
-        return response()->json(['date' => $date, 'slots' => $slots]);
+        return response()->json(['date' => $date, 'slots' => $slots, 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
+    }
+
+    private static function defaultHoraires(): array
+    {
+        $days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+        $default = [];
+        foreach ($days as $d) {
+            $default[$d] = [
+                'actif' => !in_array($d, ['samedi', 'dimanche']),
+                'debut' => '09:00',
+                'fin'   => $d === 'samedi' ? '13:00' : '18:00',
+            ];
+        }
+        return $default;
     }
 
     public function dentisteSchedule(Request $request)
