@@ -74,7 +74,7 @@ function Layout({ children }) {
   const clinicName = branding?.nom_clinique || 'HZ Dentaire'
   const currentLabel = navLinks.find(l => l.path === location.pathname)?.label || clinicName
   const logoUrl = branding?.logo_url
-    ? (branding.logo_url.startsWith('http') ? branding.logo_url : `http://localhost:8000/storage/${branding.logo_url}`)
+    ? (branding.logo_url.startsWith('http') ? branding.logo_url : `https://cabinetdentaire.onrender.com/storage/${branding.logo_url}`)
     : '/DentASpace-Logo.png'
   const isWide = !isMobile && window.innerWidth > 1200
 
