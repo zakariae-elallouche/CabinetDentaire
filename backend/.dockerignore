@@ -1,0 +1,16 @@
+.env
+.env.example
+.git
+.gitattributes
+.gitignore
+node_modules/
+vendor/
+.docker/
+README.md
+composer.lock
+package.json
+package-lock.json
+vite.config.js
+check_seed.php
+phpunit.xml
+tests/
