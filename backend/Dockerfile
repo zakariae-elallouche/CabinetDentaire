@@ -14,10 +14,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-RUN APP_KEY=base64:I7R8NAxLGUkkN0KqBs34obbLqKAN83Or4aOqIVNvcp0= \
+RUN BROADCAST_CONNECTION=log \
+    APP_KEY=base64:I7R8NAxLGUkkN0KqBs34obbLqKAN83Or4aOqIVNvcp0= \
     REVERB_APP_ID=dummy REVERB_APP_KEY=dummy REVERB_APP_SECRET=dummy \
     DB_CONNECTION=pgsql DB_HOST=dummy DB_PORT=5432 DB_DATABASE=postgres DB_USERNAME=dummy DB_PASSWORD=dummy \
     composer install --no-dev --optimize-autoloader --no-interaction
+
+ENV BROADCAST_CONNECTION=log
 
 COPY .docker/nginx.conf /etc/nginx/sites-enabled/default
 COPY .docker/start.sh /start.sh

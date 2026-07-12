@@ -23,6 +23,7 @@ if [ ! -f /app/.env ]; then
     echo "DB_DATABASE=${DB_DATABASE:-postgres}" >> /app/.env
     echo "DB_USERNAME=${DB_USERNAME:-}" >> /app/.env
     echo "DB_PASSWORD=${DB_PASSWORD:-}" >> /app/.env
+    echo "BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-log}" >> /app/.env
 fi
 
 # Run migrations
