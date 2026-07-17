@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y \
     nginx \
     unzip \
     curl \
-    && docker-php-ext-install pdo pdo_pgsql \
+    && docker-php-ext-install pdo pdo_pgsql pcntl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,7 +20,7 @@ RUN BROADCAST_CONNECTION=log \
     DB_CONNECTION=pgsql DB_HOST=dummy DB_PORT=5432 DB_DATABASE=postgres DB_USERNAME=dummy DB_PASSWORD=dummy \
     composer install --no-dev --optimize-autoloader --no-interaction
 
-ENV BROADCAST_CONNECTION=log
+ENV BROADCAST_CONNECTION=reverb
 
 COPY .docker/nginx.conf /etc/nginx/sites-enabled/default
 COPY .docker/start.sh /start.sh
@@ -28,5 +28,6 @@ COPY .docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 80
+EXPOSE 8080
 
 CMD ["/start.sh"]

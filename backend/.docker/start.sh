@@ -23,7 +23,13 @@ if [ ! -f /app/.env ]; then
     echo "DB_DATABASE=${DB_DATABASE:-postgres}" >> /app/.env
     echo "DB_USERNAME=${DB_USERNAME:-}" >> /app/.env
     echo "DB_PASSWORD=${DB_PASSWORD:-}" >> /app/.env
-    echo "BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-log}" >> /app/.env
+    echo "BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-reverb}" >> /app/.env
+    echo "REVERB_APP_ID=${REVERB_APP_ID:-app-784162}" >> /app/.env
+    echo "REVERB_APP_KEY=${REVERB_APP_KEY:-J93AYp04HW2KsQCtzliy}" >> /app/.env
+    echo "REVERB_APP_SECRET=${REVERB_APP_SECRET}" >> /app/.env
+    echo "REVERB_HOST=${REVERB_HOST:-127.0.0.1}" >> /app/.env
+    echo "REVERB_PORT=${REVERB_PORT:-8080}" >> /app/.env
+    echo "REVERB_SCHEME=${REVERB_SCHEME:-http}" >> /app/.env
 fi
 
 # Run migrations
@@ -33,6 +39,9 @@ php /app/artisan migrate --force
 php /app/artisan config:cache
 php /app/artisan route:cache
 php /app/artisan view:cache
+
+# Start Reverb WebSocket server in background
+php /app/artisan reverb:start --host=127.0.0.1 --port=8080 --no-interaction > /app/storage/logs/reverb.log 2>&1 &
 
 # Start php-fpm and nginx
 php-fpm -D
