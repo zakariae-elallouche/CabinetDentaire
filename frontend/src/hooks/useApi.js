@@ -2,10 +2,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../api'
 
 export function useApiQuery(key, url, options = {}) {
-  const { params, enabled, ...queryOptions } = options
+  const { params, enabled, unwrap = true, ...queryOptions } = options
   return useQuery({
     queryKey: Array.isArray(key) ? key : [key, params],
-    queryFn: () => api.get(url, { params }).then(r => r.data),
+    queryFn: () => api.get(url, { params }).then(r => {
+      const body = r.data
+      if (unwrap && body && typeof body === 'object' && !Array.isArray(body) && Array.isArray(body.data)) {
+        return body.data
+      }
+      return body
+    }),
     enabled,
     ...queryOptions,
   })

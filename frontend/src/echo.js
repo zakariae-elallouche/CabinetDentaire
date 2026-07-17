@@ -4,9 +4,11 @@ import Pusher from 'pusher-js'
 window.Pusher = Pusher
 
 let echo = null
+let echoFailed = false
 
 export function getEcho() {
   if (echo) return echo
+  if (echoFailed) return null
 
   echo = new Echo({
     broadcaster: 'reverb',
@@ -31,6 +33,19 @@ export function getEcho() {
       }
     },
   })
+
+  if (echo.connector?.pusher) {
+    echo.connector.pusher.connection.bind('error', () => {
+      echoFailed = true
+      try { echo.disconnect() } catch {}
+      echo = null
+    })
+    echo.connector.pusher.connection.bind('failed', () => {
+      echoFailed = true
+      try { echo.disconnect() } catch {}
+      echo = null
+    })
+  }
 
   return echo
 }

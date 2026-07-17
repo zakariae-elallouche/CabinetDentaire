@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, React } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -11,11 +11,13 @@ function Layout({ children }) {
   const { user, logout, branding, tenantStatut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebarCollapsed') === 'true')
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navRef = useRef(null)
+
+  useEffect(() => { localStorage.setItem('sidebarCollapsed', collapsed) }, [collapsed])
 
   useEffect(() => {
     const h = () => setIsMobile(window.innerWidth < 768)
@@ -75,7 +77,7 @@ function Layout({ children }) {
   const currentLabel = navLinks.find(l => l.path === location.pathname)?.label || clinicName
   const logoUrl = branding?.logo_url
     ? (branding.logo_url.startsWith('http') ? branding.logo_url : `https://cabinetdentaire.onrender.com/storage/${branding.logo_url}`)
-    : '/DentASpace-LogoBG.webp'
+    : '/DentASpace-Logo.webp'
   const isWide = !isMobile && window.innerWidth > 1200
 
   const NavIcon = ({ type, size = 18 }) => {
@@ -341,7 +343,6 @@ function Layout({ children }) {
         position: 'sticky', top: 0,
         height: '100vh',
         display: 'flex', flexDirection: 'column',
-        overflow: 'hidden',
         transition: 'padding 0.2s',
         zIndex: 20,
       }}>
@@ -474,21 +475,67 @@ function Layout({ children }) {
           paddingTop: collapsed ? 10 : 12,
         }}>
           {collapsed ? (
-            <button
-              onClick={handleLogout}
-              title="Se déconnecter"
-              style={{
-                width: '100%', padding: '8px 0',
-                display: 'flex', justifyContent: 'center',
-                color: 'rgba(255,255,255,0.5)', cursor: 'pointer',
-                borderRadius: 6, transition: 'all 0.12s',
-                background: 'none', border: 'none', fontFamily: 'inherit',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--rose)'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.background = 'transparent' }}
-            >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
+            <div style={{ position: 'relative' }} data-user-menu>
+              <div
+                onClick={() => setShowUserMenu(v => !v)}
+                title={displayName}
+                style={{
+                  width: '100%', display: 'flex', justifyContent: 'center', cursor: 'pointer',
+                  padding: '4px 0', borderRadius: 8,
+                }}
+              >
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: '#4AB2BB',
+                  display: 'grid', placeItems: 'center',
+                  color: '#fff', fontWeight: 500, fontSize: 11, flexShrink: 0,
+                  boxShadow: '0 2px 6px rgba(87,200,203,0.25)',
+                }}>
+                  {initials}
+                </div>
+              </div>
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 'calc(100% + 10px)',
+                  background: '#fff',
+                  border: '1px solid var(--line)',
+                  borderRadius: 12,
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+                  padding: 14,
+                  zIndex: 300,
+                  animation: 'scaleIn 0.15s ease',
+                  transformOrigin: 'bottom left',
+                  minWidth: 180,
+                }}>
+                  <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--ink)', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>{user?.role}</div>
+                  {user?.role === 'PATIENT' && (
+                    <MenuItem onClick={() => { setShowUserMenu(false); navigate('/patient/profil') }}>Mon profil</MenuItem>
+                  )}
+                  {(user?.role === 'SECRETAIRE' || user?.role === 'DENTISTE' || user?.role === 'ADMIN_CLINIQUE') && (
+                    <MenuItem onClick={() => {
+                      setShowUserMenu(false)
+                      const paths = { SECRETAIRE: '/secretaire/compte', DENTISTE: '/dentiste/compte', ADMIN_CLINIQUE: '/admin/compte' }
+                      navigate(paths[user.role])
+                    }}>Mon Profil</MenuItem>
+                  )}
+                  <button
+                    onClick={() => { setShowUserMenu(false); handleLogout() }}
+                    style={{
+                      width: '100%', padding: '9px 12px', borderRadius: 8,
+                      background: 'var(--rose-soft)', color: 'var(--rose)', border: 'none',
+                      cursor: 'pointer', fontSize: 13, fontWeight: 500,
+                      fontFamily: 'inherit', textAlign: 'left',
+                      transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#ffe8e6'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--rose-soft)'}
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div style={{ position: 'relative' }} data-user-menu>
               <div
@@ -667,4 +714,4 @@ function SubscriptionBanner({ statut, userRole }) {
   )
 }
 
-export default React.memo(Layout)
+export default memo(Layout)

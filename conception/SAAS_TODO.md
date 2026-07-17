@@ -252,10 +252,7 @@
 
 password forget (need verified domaine), 
 pdf of system
-problem: Accès temporairement bloqué
-Trop de tentatives de connexion ont été détectées.
-Veuillez réessayer plus tard.
-date de naissance can't be future     
+click on link of navbar expend, and websocket console error
 
 ---
 

@@ -16,7 +16,8 @@ function SuperAdminTenants() {
 
   const { data: response, isLoading } = useApiQuery(
     ['superadmin-tenants', page, filters],
-    `/superadmin/tenants?${params}`
+    `/superadmin/tenants?${params}`,
+    { unwrap: false }
   )
 
   const tenants = response?.data || []

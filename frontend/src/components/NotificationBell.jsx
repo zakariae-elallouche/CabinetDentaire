@@ -89,7 +89,10 @@ export default memo(function NotificationBell({ user }) {
   const unread = notifs.filter(n => !n.lu).length
 
   const fetchNotifs = useCallback(() => {
-    api.get('/notifications').then(res => setNotifs(res.data)).catch(() => {})
+    api.get('/notifications').then(res => {
+      const data = res.data
+      setNotifs(Array.isArray(data) ? data : (data?.data || []))
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -98,15 +101,23 @@ export default memo(function NotificationBell({ user }) {
     if (!user?.id) return
 
     const echo = getEcho()
-    const channel = echo.private(`notifications.${user.id}`)
+    if (!echo) return
 
-    channel.listen('.NewNotification', (e) => {
-      setNotifs(prev => [e.notification, ...prev])
-    })
+    let channel
+    try {
+      channel = echo.private(`notifications.${user.id}`)
+      channel.listen('.NewNotification', (e) => {
+        setNotifs(prev => [e.notification, ...prev])
+      })
+    } catch {}
 
     return () => {
-      channel.stopListening('.NewNotification')
-      echo.leave(`notifications.${user.id}`)
+      if (channel) {
+        try {
+          channel.stopListening('.NewNotification')
+          echo.leave(`notifications.${user.id}`)
+        } catch {}
+      }
     }
   }, [user?.id, fetchNotifs])
 

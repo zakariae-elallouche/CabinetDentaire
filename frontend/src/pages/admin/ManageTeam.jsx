@@ -15,7 +15,8 @@ function ManageTeam() {
   const [sending, setSending] = useState(false)
   const [newMemberPw, setNewMemberPw] = useState(null)
 
-  const { data: members = [], isLoading } = useApiQuery('invitations', '/invitations')
+  const { data: membersRaw, isLoading } = useApiQuery('invitations', '/invitations')
+  const members = Array.isArray(membersRaw) ? membersRaw : (membersRaw?.data ?? [])
 
   const addMutation = useApiMutation('post', '/invitations', {
     onSuccess: (res) => {
