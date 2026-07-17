@@ -252,7 +252,6 @@
 
 password forget (need verified domaine), 
 pdf of system
-click on link of navbar expend, and websocket console error
 
 ---
 

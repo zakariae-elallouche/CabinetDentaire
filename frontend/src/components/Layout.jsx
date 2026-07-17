@@ -103,17 +103,15 @@ function Layout({ children }) {
         <div style={{
           padding: '12px 16px',
           display: 'flex', alignItems: 'center', gap: '10px',
-          borderBottom: '1px solid var(--line)',
-          background: 'rgba(255,255,255,0.85)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          background: 'linear-gradient(rgba(10,20,40,0.82), rgba(10,20,40,0.82)), url(/background-dentaspace.webp) center/cover no-repeat',
           position: 'sticky', top: 0, zIndex: 10,
         }}>
           <button
             onClick={() => setMobileMenuOpen(v => !v)}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--ink)', padding: 4,
+              color: '#fff', padding: 4,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 22, lineHeight: 1, flexShrink: 0,
             }}
@@ -129,7 +127,7 @@ function Layout({ children }) {
           <img src={logoUrl} alt={clinicName} style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
           <span style={{
             fontWeight: 500, fontSize: 16,
-            color: 'var(--ink)', flex: 1, minWidth: 0,
+            color: '#fff', flex: 1, minWidth: 0,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {currentLabel}
