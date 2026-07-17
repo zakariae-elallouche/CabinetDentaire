@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -13,16 +13,9 @@ import AnimateIn from '../../components/AnimateIn'
 function PatientsList() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    api.get('/patients')
-      .then(res => setPatients(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: patients = [], isLoading } = useApiQuery('patients', '/patients')
 
   const fullName = (p) => `${p.prenom || ''} ${p.nom || ''}`.trim()
 
@@ -139,27 +132,21 @@ function PatientDetail() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [patient, setPatient] = useState(null)
-  const [visites, setVisites] = useState([])
-  const [ordonnances, setOrdonnances] = useState([])
-  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('visites')
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/patients'),
-      api.get(`/patient/${id}/visites`),
-      api.get(`/patient/${id}/ordonnances`),
-    ])
-      .then(([patientsRes, visitesRes, ordRes]) => {
-        const p = patientsRes.data.find(x => String(x.id) === String(id))
-        setPatient(p || null)
-        setVisites(visitesRes.data)
-        setOrdonnances(ordRes.data)
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [id])
+  const { data: patients = [] } = useApiQuery('patients', '/patients')
+  const { data: visites = [], isLoading: visitesLoading } = useApiQuery(
+    ['patient-visites', id],
+    `/patient/${id}/visites`,
+    { enabled: !!id }
+  )
+  const { data: ordonnances = [], isLoading: ordsLoading } = useApiQuery(
+    ['patient-ordonnances', id],
+    `/patient/${id}/ordonnances`,
+    { enabled: !!id }
+  )
+  const loading = visitesLoading || ordsLoading
+  const patient = patients.find(x => String(x.id) === String(id)) || null
 
   const fullName = (p) => `${p?.prenom || ''} ${p?.nom || ''}`.trim()
   const initials = (name = '') =>

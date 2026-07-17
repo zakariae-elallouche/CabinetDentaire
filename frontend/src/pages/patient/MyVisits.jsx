@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import jsPDF from 'jspdf'
 import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -20,31 +20,19 @@ const fmtDate = (dateStr) => {
 
 function MyVisits() {
   const isMobile = useIsMobile()
-  const [visits, setVisits]         = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(false)
-  const [search, setSearch]         = useState('')
-  const [selected, setSelected]     = useState(null)
-  const [activeTab, setActiveTab]   = useState('facture')
-  const [patientName, setPatientName] = useState('')
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [activeTab, setActiveTab] = useState('facture')
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const meRes = await api.get('/me')
-        const profile = meRes.data.profile
-        const patientId = profile.id
-        setPatientName(`${profile.prenom || ''} ${profile.nom || ''}`.trim())
-        const res = await api.get(`/patient/${patientId}/visites`)
-        setVisits(res.data)
-      } catch {
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+  const { data: meData } = useApiQuery('me', '/me')
+  const profile = meData?.profile
+  const patientId = profile?.id
+  const patientName = profile ? `${profile.prenom || ''} ${profile.nom || ''}`.trim() : ''
+  const { data: visits = [], isLoading, isError } = useApiQuery(
+    ['patient-visites', patientId],
+    `/patient/${patientId}/visites`,
+    { enabled: !!patientId }
+  )
 
   const filtered = search
     ? visits.filter(v =>
@@ -200,7 +188,7 @@ function MyVisits() {
     await generateOrdonnancePDF(p, patientName)
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading || !patientId) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -25,34 +25,30 @@ function AgendaDuJour() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
   const [date, setDate]       = useState(new Date())
-  const [rdvs, setRdvs]       = useState([])
-  const [visites, setVisites] = useState([])
-  const [loading, setLoading] = useState(true)
   const [tab, setTab]         = useState('rdv') // 'rdv' | 'visites'
   const [search, setSearch]   = useState('')
   const [expandedVisite, setExpandedVisite] = useState(null)
 
-  useEffect(() => {
-    setLoading(true)
-    const dateStr = toLocalStr(date)
-    Promise.all([
-      api.get('/dentiste/schedule', { params: { date: dateStr } }).then(r => r.data || []).catch(() => []),
-      toLocalStr(date) === toLocalStr(new Date())
-        ? api.get('/dentiste/visites/today').then(r => r.data || []).catch(() => [])
-        : Promise.resolve([]),
-    ]).then(([r, v]) => {
-      setRdvs(r)
-      setVisites(v)
-    }).finally(() => setLoading(false))
-  }, [date])
+  const dateStr = toLocalStr(date)
+  const isToday = toLocalStr(date) === toLocalStr(new Date())
+
+  const { data: rdvs = [], isLoading: rdvsLoading } = useApiQuery(
+    ['dentiste-schedule', dateStr],
+    '/dentiste/schedule',
+    { params: { date: dateStr } }
+  )
+  const { data: visites = [], isLoading: visitesLoading } = useApiQuery(
+    ['dentiste-visites-today', dateStr],
+    '/dentiste/visites/today',
+    { enabled: isToday }
+  )
+  const loading = rdvsLoading || (isToday && visitesLoading)
 
   const shiftDay = (n) => {
     const d = new Date(date)
     d.setDate(d.getDate() + n)
     setDate(d)
   }
-
-  const isToday = toLocalStr(date) === toLocalStr(new Date())
 
   const pName = (obj) =>
     obj?.patient ? `${obj.patient.prenom || ''} ${obj.patient.nom || ''}`.trim() : '—'

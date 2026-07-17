@@ -41,7 +41,7 @@ class BillingController extends Controller
         $invoices = SaaSInvoice::where('tenant_id', tenant_id())
             ->with('subscription')
             ->orderByDesc('created_at')
-            ->get();
+            ->paginate(25);
 
         return response()->json($invoices);
     }

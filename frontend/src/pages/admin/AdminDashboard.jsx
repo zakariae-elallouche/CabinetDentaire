@@ -1,8 +1,8 @@
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid, Area,
@@ -25,17 +25,15 @@ const DONUT_COLORS = ['#57c8cb', '#f59e0b']
 function AdminDashboard() {
   const isMobile = useIsMobile()
   const isWide = useIsWide()
-  const [stats, setStats] = useState(null)
-  const [dashboard, setDashboard] = useState(null)
   const [slug, setSlug] = useState(null)
-  const [loading, setLoading] = useState(true)
+
+  const { data: stats, isLoading: statsLoading } = useApiQuery('factures-report', '/factures/report')
+  const { data: dashboard, isLoading: dashLoading } = useApiQuery('dashboard', '/dashboard')
+  const loading = statsLoading || dashLoading
 
   useEffect(() => {
-    Promise.all([
-      api.get('/factures/report').then(r => setStats(r.data)).catch(() => {}),
-      api.get('/dashboard').then(r => setDashboard(r.data)).catch(() => {}),
-      api.get('/me').then(r => { if (r.data.profile?.slug) setSlug(r.data.profile.slug) }).catch(() => {}),
-    ]).finally(() => setLoading(false))
+    const u = JSON.parse(localStorage.getItem('user') || '{}')
+    if (u?.profile?.slug) setSlug(u.profile.slug)
   }, [])
 
   const regLink = slug ? `${window.location.origin}/register?slug=${slug}` : null

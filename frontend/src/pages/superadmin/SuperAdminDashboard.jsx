@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import AnimateIn from '../../components/AnimateIn'
+import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 
 
 const DONUT_COLORS = ['#16a34a', '#eab308', '#e11d48']
@@ -14,13 +14,12 @@ function CustomDot({ cx, cy, stroke }) {
 
 function SuperAdminDashboard() {
   const navigate = useNavigate()
-  const [data, setData] = useState(null)
-  const [monthly, setMonthly] = useState([])
+  const isMobile = useIsMobile()
+  const { data: statsData } = useApiQuery('superadmin-stats', '/superadmin/stats')
+  const { data: monthlyData } = useApiQuery('superadmin-monthly', '/superadmin/stats/monthly')
 
-  useEffect(() => {
-    api.get('/superadmin/stats').then(r => setData(r.data)).catch(() => {})
-    api.get('/superadmin/stats/monthly').then(r => setMonthly(r.data.months)).catch(() => {})
-  }, [])
+  const data = statsData
+  const monthly = monthlyData?.months || []
 
   if (!data) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
@@ -48,8 +47,8 @@ function SuperAdminDashboard() {
         <StatCard title="Churn (mois)" value={data.churn} color="#e11d48" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 28 }}>
-        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 2fr', gap: 16, marginBottom: 28 }}>
+        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: isMobile ? 16 : 24 }}>
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 15, color: 'var(--ink)', margin: '0 0 16px' }}>Répartition des cliniques</h3>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <ResponsiveContainer width="100%" height={200}>
@@ -87,7 +86,7 @@ function SuperAdminDashboard() {
           </div>
         </div>
 
-        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: 24 }}>
+        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: isMobile ? 16 : 24 }}>
           <h3 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 15, color: 'var(--ink)', margin: '0 0 16px' }}>Évolution mensuelle</h3>
           {monthly.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>

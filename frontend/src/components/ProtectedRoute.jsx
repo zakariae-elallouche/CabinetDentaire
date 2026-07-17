@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-function ProtectedRoute({ children, roles }) {
+const ProtectedRoute = memo(function ProtectedRoute({ children, roles }) {
   const { user, token, tenantStatut } = useAuth()
 
   if (!token) {
@@ -17,6 +18,6 @@ function ProtectedRoute({ children, roles }) {
   }
 
   return children
-}
+})
 
 export default ProtectedRoute

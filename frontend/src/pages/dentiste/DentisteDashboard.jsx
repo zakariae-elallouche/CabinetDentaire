@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -21,29 +21,22 @@ function DentisteDashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isMobile = useIsMobile()
-  const [rdvAujourdhui, setRdvAujourdhui] = useState([])
   const [stats, setStats] = useState({ total: 0, completes: 0, aVenir: 0 })
-  const [loading, setLoading] = useState(true)
+
+  const { data: rdvAujourdhui = [], isLoading } = useApiQuery('dentiste-schedule', '/dentiste/schedule')
+
+  useEffect(() => {
+    setStats({
+      total:     rdvAujourdhui.length,
+      completes: rdvAujourdhui.filter(r => r.statut === 'COMPLÉTÉ').length,
+      aVenir:    rdvAujourdhui.filter(r => r.statut === 'CONFIRMÉ').length,
+    })
+  }, [rdvAujourdhui])
 
   const today = new Date()
   const todayLabel = `${today.getDate()} ${MONTHS_FR[today.getMonth()]} ${today.getFullYear()}`
   const greeting = today.getHours() < 12 ? 'Bonjour' : today.getHours() < 18 ? 'Bon après-midi' : 'Bonsoir'
   const firstName = user?.prenom || user?.nom || 'Docteur'
-
-  useEffect(() => {
-    api.get('/dentiste/schedule')
-      .then(res => {
-        const rdvs = res.data
-        setRdvAujourdhui(rdvs)
-        setStats({
-          total:     rdvs.length,
-          completes: rdvs.filter(r => r.statut === 'COMPLÉTÉ').length,
-          aVenir:    rdvs.filter(r => r.statut === 'CONFIRMÉ').length,
-        })
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
 
   const patientName = (rdv) =>
     rdv.patient ? `${rdv.patient.prenom || ''} ${rdv.patient.nom || ''}`.trim() : rdv.patient?.nom_complet || '—'
@@ -59,7 +52,7 @@ function DentisteDashboard() {
     { Ico: IcoUsers, label: 'Patients',               sub: 'Historique & dossiers',  path: '/dentiste/patients',           icoStyle: { background: 'var(--success-soft)',color: 'var(--success)' } },
   ]
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

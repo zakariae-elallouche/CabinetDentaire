@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -17,26 +17,26 @@ function RecordVisit() {
   const [selectedOps, setSelectedOps] = useState([])
   const [rdvs, setRdvs] = useState([])
   const [selectedRdvId, setSelectedRdvId] = useState(rdv_id || '')
-  const [dataLoading, setDataLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [selectOpVal, setSelectOpVal] = useState('')
-  const [fraisVisite, setFraisVisite] = useState(200)
+
+  const { data: cliniqueInfo } = useApiQuery('clinique-info', '/clinique/info')
+  const fraisVisite = cliniqueInfo?.frais_visite ?? 200
+
+  const { data: operationsData = [], isLoading: opsLoading } = useApiQuery('operations', '/operations')
+  const { data: rdvData = [], isLoading: rdvsLoading } = useApiQuery('rdv', '/rendez-vous')
+  const dataLoading = opsLoading || rdvsLoading
 
   useEffect(() => {
-    api.get('/clinique/info').then(r => setFraisVisite(r.data.frais_visite ?? 200)).catch(() => {})
-  }, [])
+    if (operationsData.length) setOperations(operationsData)
+  }, [operationsData])
+
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10)
+    setRdvs(rdvData.filter(r => r.statut === 'CONFIRMÉ' && r.date === todayStr))
+  }, [rdvData])
 
   const total = fraisVisite + selectedOps.reduce((s, op) => s + Number(op.cout), 0)
-
-  useEffect(() => {
-    Promise.all([api.get('/operations'), api.get('/rendez-vous')])
-      .then(([opsRes, rdvRes]) => {
-        setOperations(opsRes.data)
-        const todayStr = new Date().toISOString().slice(0, 10)
-        setRdvs(rdvRes.data.filter(r => r.statut === 'CONFIRMÉ' && r.date === todayStr))
-      })
-      .catch(() => {}).finally(() => setDataLoading(false))
-  }, [])
 
   const selectedRdv = rdvs.find(r => String(r.id) === String(selectedRdvId))
   const patientName = selectedRdv?.patient
@@ -51,12 +51,21 @@ function RecordVisit() {
     if (op && !selectedOps.find(s => s.id === op.id)) setSelectedOps(prev => [...prev, op])
   }
 
+  const createVisitMutation = useApiMutation('post', '/visites', {
+    onSuccess: (res) => {
+      toast.success('Visite enregistrée — facture générée !')
+      const visiteId = res.data?.id
+      navigate(visiteId ? `/dentiste/ordonnance/${visiteId}` : '/dentiste/dashboard')
+    },
+    invalidate: ['rdv', 'operations'],
+  })
+
   const handleSubmit = async () => {
     if (!selectedRdvId) { toast.warning('Sélectionnez un rendez-vous'); return }
     if (!formData.diagnostic) { toast.warning('Entrez un diagnostic'); return }
     setLoading(true)
     try {
-      const res = await api.post('/visites', {
+      await createVisitMutation.mutateAsync({
         ...formData,
         rendezvous_id: selectedRdvId,
         frais_visite_base: fraisVisite,
@@ -66,9 +75,6 @@ function RecordVisit() {
           description: op.description || null,
         })),
       })
-      toast.success('Visite enregistrée — facture générée !')
-      const visiteId = res.data?.id
-      navigate(visiteId ? `/dentiste/ordonnance/${visiteId}` : '/dentiste/dashboard')
     } catch { /* interceptor handles */ }
     finally { setLoading(false) }
   }

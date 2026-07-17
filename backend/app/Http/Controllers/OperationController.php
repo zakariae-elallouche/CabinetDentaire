@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\CatalogueOperation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class OperationController extends Controller
 {
     public function index()
     {
-        return response()->json(CatalogueOperation::all());
+        $data = Cache::remember('catalogue_operations', 3600, function () {
+            return CatalogueOperation::paginate(25);
+        });
+
+        return response()->json($data);
     }
 
     public function store(Request $request)

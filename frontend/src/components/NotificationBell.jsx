@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -42,7 +42,7 @@ const fmtTime = (dateStr) => {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
 }
 
-export default function NotificationBell({ user }) {
+export default memo(function NotificationBell({ user }) {
   const [notifs, setNotifs]   = useState([])
   const [open, setOpen]       = useState(false)
   const ref                   = useRef(null)
@@ -265,4 +265,4 @@ export default function NotificationBell({ user }) {
       )}
     </div>
   )
-}
+})

@@ -1,4 +1,6 @@
-export default function AnimateIn({ children, delay = 0 }) {
+import { memo } from 'react'
+
+export default memo(function AnimateIn({ children, delay = 0 }) {
   return (
     <div
       style={{
@@ -9,4 +11,4 @@ export default function AnimateIn({ children, delay = 0 }) {
       {children}
     </div>
   )
-}
+})

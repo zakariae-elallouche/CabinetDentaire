@@ -9,6 +9,7 @@ use App\Models\Secretaire;
 use App\Services\NotificationService;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class RendezVousController extends Controller
@@ -25,22 +26,24 @@ class RendezVousController extends Controller
             ->where('date_heure', '<', Carbon::now())
             ->update(['statut' => 'annule', 'notes' => 'Non confirmé dans les délais']);
 
+        $perPage = 25;
+
         $rdvs = match($user->role) {
             'patient' => RendezVous::with('patient')
                 ->where('patient_id', Patient::where('utilisateur_id', $user->id)->value('id'))
-                ->orderByDesc('date_heure')->get(),
+                ->orderByDesc('date_heure')->paginate($perPage),
 
             'dentiste' => RendezVous::with('patient')
                 ->where('statut', 'confirme')
                 ->where('dentiste_id', Dentiste::where('utilisateur_id', $user->id)->value('id'))
-                ->orderBy('date_heure')->get(),
+                ->orderBy('date_heure')->paginate($perPage),
 
-            'secretaire', 'admin_clinique' => RendezVous::with('patient')->orderByDesc('date_heure')->get(),
+            'secretaire', 'admin_clinique' => RendezVous::with('patient')->orderByDesc('date_heure')->paginate($perPage),
 
             default => abort(403),
         };
 
-        return response()->json($rdvs->map->toFrontend()->values());
+        return response()->json($rdvs->through(fn($rdv) => $rdv->toFrontend()));
     }
 
     public function store(Request $request)
@@ -159,49 +162,55 @@ class RendezVousController extends Controller
         $date       = $request->date;
         $dentisteId = $request->dentiste_id ?? Dentiste::value('id');
 
-        if (!$dentisteId) {
-            return response()->json(['date' => $date, 'slots' => [], 'horaires' => [], 'frais_visite' => $fraisVisite]);
-        }
+        $cacheKey = 'available_slots.' . $date . '.' . ($dentisteId ?? 'all');
 
-        $tenant   = $request->user()->tenant;
-        $horaires = $tenant->horaires ?? self::defaultHoraires();
-        $fraisVisite = (float)($tenant->frais_visite ?? 200);
+        $result = Cache::remember($cacheKey, 30, function () use ($request, $date, $dentisteId) {
+            if (!$dentisteId) {
+                return ['date' => $date, 'slots' => [], 'horaires' => [], 'frais_visite' => 0];
+            }
 
-        $dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        $carbon   = Carbon::parse($date);
-        $dayKey   = $dayNames[(int)$carbon->format('w')];
-        $dayHoraire = $horaires[$dayKey] ?? ['actif' => false];
+            $tenant   = $request->user()->tenant;
+            $horaires = $tenant->horaires ?? self::defaultHoraires();
+            $fraisVisite = (float)($tenant->frais_visite ?? 200);
 
-        if (!($dayHoraire['actif'] ?? false)) {
-            return response()->json(['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
-        }
+            $dayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+            $carbon   = Carbon::parse($date);
+            $dayKey   = $dayNames[(int)$carbon->format('w')];
+            $dayHoraire = $horaires[$dayKey] ?? ['actif' => false];
 
-        $debut = $dayHoraire['debut'] ?? '09:00';
-        $fin   = $dayHoraire['fin'] ?? '18:00';
+            if (!($dayHoraire['actif'] ?? false)) {
+                return ['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite];
+            }
 
-        $taken = RendezVous::where('dentiste_id', $dentisteId)
-            ->whereDate('date_heure', $date)
-            ->whereIn('statut', ['en_attente', 'confirme'])
-            ->pluck('date_heure')
-            ->map(fn($d) => Carbon::parse($d)->format('H:i'))
-            ->toArray();
+            $debut = $dayHoraire['debut'] ?? '09:00';
+            $fin   = $dayHoraire['fin'] ?? '18:00';
 
-        $now   = Carbon::now();
-        $slots = [];
-        $start = Carbon::parse("$date $debut");
-        $end   = Carbon::parse("$date $fin");
+            $taken = RendezVous::where('dentiste_id', $dentisteId)
+                ->whereDate('date_heure', $date)
+                ->whereIn('statut', ['en_attente', 'confirme'])
+                ->pluck('date_heure')
+                ->map(fn($d) => Carbon::parse($d)->format('H:i'))
+                ->toArray();
 
-        if ($start->gte($end)) {
-            return response()->json(['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
-        }
+            $now   = Carbon::now();
+            $slots = [];
+            $start = Carbon::parse("$date $debut");
+            $end   = Carbon::parse("$date $fin");
 
-        while ($start < $end) {
-            $slot = $start->format('H:i');
-            if (!in_array($slot, $taken) && $start->gt($now)) $slots[] = $slot;
-            $start->addMinutes(30);
-        }
+            if ($start->gte($end)) {
+                return ['date' => $date, 'slots' => [], 'horaires' => $horaires, 'frais_visite' => $fraisVisite];
+            }
 
-        return response()->json(['date' => $date, 'slots' => $slots, 'horaires' => $horaires, 'frais_visite' => $fraisVisite]);
+            while ($start < $end) {
+                $slot = $start->format('H:i');
+                if (!in_array($slot, $taken) && $start->gt($now)) $slots[] = $slot;
+                $start->addMinutes(30);
+            }
+
+            return ['date' => $date, 'slots' => $slots, 'horaires' => $horaires, 'frais_visite' => $fraisVisite];
+        });
+
+        return response()->json($result);
     }
 
     private static function defaultHoraires(): array
@@ -229,8 +238,8 @@ class RendezVousController extends Controller
             ->where('statut', 'confirme')
             ->whereDate('date_heure', today())
             ->orderBy('date_heure')
-            ->get();
+            ->paginate(25);
 
-        return response()->json($rdvs->map->toFrontend()->values());
+        return response()->json($rdvs->through(fn($rdv) => $rdv->toFrontend()));
     }
 }

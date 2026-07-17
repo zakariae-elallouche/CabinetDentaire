@@ -56,7 +56,7 @@ function RegisterClinic() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: `url('/background-dentaspace.png') center/cover no-repeat`,
+      background: `url('/background-dentaspace.webp') center/cover no-repeat`,
       position: 'relative',
       display: 'flex',
       alignItems: 'center',
@@ -79,7 +79,7 @@ function RegisterClinic() {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28,
         }}>
-          <img src="/DentASpace-LogoBG.png" alt="Dent A Space"
+          <img src="/DentASpace-LogoBG.webp" alt="Dent A Space"
             style={{ width: 52, height: 52, objectFit: 'contain', borderRadius: 11 }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: 19, color: '#fff' }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -12,22 +12,17 @@ function IssuePrescription() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
 
-  const [medicaments, setMedicaments] = useState([])
   const [selectedMeds, setSelectedMeds] = useState([])
   const [instructions, setInstructions] = useState('')
   const [loading, setLoading] = useState(false)
-  const [dataLoading, setDataLoading] = useState(true)
 
-  // Rediriger si pas de visite_id — l'ordonnance doit venir d'une visite enregistrée
+  const { data: medicaments = [], isLoading: dataLoading } = useApiQuery('medicaments', '/medicaments')
+
   useEffect(() => {
     if (!visite_id) {
       toast.warning('Une ordonnance doit être créée depuis une visite.')
       navigate('/dentiste/dashboard')
-      return
     }
-    api.get('/medicaments')
-      .then(res => setMedicaments(res.data))
-      .catch(() => {}).finally(() => setDataLoading(false))
   }, [])
 
   const handleAddMed = (e) => {
@@ -44,12 +39,20 @@ function IssuePrescription() {
     setSelectedMeds(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m))
   }
 
+  const createPrescriptionMutation = useApiMutation('post', '/ordonnances', {
+    onSuccess: () => {
+      toast.success('Ordonnance enregistrée')
+      navigate('/dentiste/dashboard')
+    },
+    invalidate: 'medicaments',
+  })
+
   const handleSubmit = async () => {
     if (selectedMeds.length === 0) { toast.warning('Ajoutez au moins un médicament'); return }
     if (selectedMeds.some(m => !m.frequence)) { toast.warning('Remplissez la fréquence de tous les médicaments'); return }
     setLoading(true)
     try {
-      await api.post('/ordonnances', {
+      await createPrescriptionMutation.mutateAsync({
         visite_id,
         instructions_generales: instructions,
         medicaments: selectedMeds.map(m => ({
@@ -58,8 +61,6 @@ function IssuePrescription() {
           duree_jours: m.duree_jours,
         })),
       })
-      toast.success('Ordonnance enregistrée')
-      navigate('/dentiste/dashboard')
     } catch { /* interceptor */ }
     finally { setLoading(false) }
   }

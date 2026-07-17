@@ -4,7 +4,7 @@ import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { promptDialog } from '../../components/DialogProvider'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -23,60 +23,49 @@ function SecretaireDashboard() {
   const [stats, setStats] = useState({ rdvEnAttente: 0, facturesEnAttente: 0, totalPatients: 0, rdvCeMois: 0 })
   const [rdvEnAttente, setRdvEnAttente] = useState([])
   const [rdvAujourdhui, setRdvAujourdhui] = useState([])
-  const [loading, setLoading] = useState(true)
 
   const todayStr = new Date().toISOString().slice(0, 10)
 
+  const { data: rdvData = [], isLoading: rdvLoading } = useApiQuery('rdv', '/rendez-vous')
+  const { data: patientsData = [], isLoading: patientsLoading } = useApiQuery('patients', '/patients')
+  const { data: facturesData = [], isLoading: facturesLoading } = useApiQuery('factures', '/factures')
+  const loading = rdvLoading || patientsLoading || facturesLoading
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [rdvRes, patientsRes, facturesRes] = await Promise.all([
-          api.get('/rendez-vous'),
-          api.get('/patients'),
-          api.get('/factures'),
-        ])
-        const all = rdvRes.data
-        const enAttente = all.filter(r => r.statut === 'EN_ATTENTE')
-        const aujourdhui = all.filter(r => r.date === todayStr).sort((a, b) => a.heure?.localeCompare(b.heure))
-        const facturesEnAttente = facturesRes.data.filter(f => f.statut === 'en_attente')
-        setRdvEnAttente(enAttente)
-        setRdvAujourdhui(aujourdhui)
-        setStats({
-          rdvEnAttente: enAttente.length,
-          totalPatients: patientsRes.data.length,
-          facturesEnAttente: facturesEnAttente.length,
-          rdvCeMois: all.filter(r => r.date?.startsWith(todayStr.slice(0, 7))).length,
-        })
-      } catch {
-        setRdvEnAttente([
-          { id: 1, patient: { nom_complet: 'Ahmed Mansouri', telephone: '0661234567' }, date: '2026-05-08', heure: '09:00', notes: 'Douleur molaire' },
-          { id: 2, patient: { nom_complet: 'Nadia Berrada', telephone: '0662345678' }, date: '2026-05-09', heure: '14:30', notes: 'Contrôle annuel' },
-        ])
-        setStats({ rdvEnAttente: 2, facturesEnAttente: 3, totalPatients: 48, rdvCeMois: 12 })
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+    if (loading) return
+    const all = rdvData
+    const enAttente = all.filter(r => r.statut === 'EN_ATTENTE')
+    const aujourdhui = all.filter(r => r.date === todayStr).sort((a, b) => a.heure?.localeCompare(b.heure))
+    const facturesEnAttente = facturesData.filter(f => f.statut === 'en_attente')
+    setRdvEnAttente(enAttente)
+    setRdvAujourdhui(aujourdhui)
+    setStats({
+      rdvEnAttente: enAttente.length,
+      totalPatients: patientsData.length,
+      facturesEnAttente: facturesEnAttente.length,
+      rdvCeMois: all.filter(r => r.date?.startsWith(todayStr.slice(0, 7))).length,
+    })
+  }, [rdvData, patientsData, facturesData, loading])
+
+  const confirmMutation = useApiMutation('put', null, {
+    invalidate: 'rdv',
+    onSuccess: () => toast.success('Rendez-vous confirmé'),
+    onError: () => toast.error('Erreur lors de la confirmation'),
+  })
+  const rejectMutation = useApiMutation('put', null, {
+    invalidate: 'rdv',
+    onSuccess: () => toast.success('Rendez-vous rejeté'),
+    onError: () => toast.error('Erreur lors du rejet'),
+  })
 
   const handleConfirm = async (id) => {
-    try {
-      await api.put(`/rendez-vous/${id}/confirm`)
-      setRdvEnAttente(prev => prev.filter(r => r.id !== id))
-      setStats(prev => ({ ...prev, rdvEnAttente: prev.rdvEnAttente - 1 }))
-    } catch { toast.error('Erreur lors de la confirmation') }
+    confirmMutation.mutate({ _config: { url: `/rendez-vous/${id}/confirm` } })
   }
 
   const handleReject = async (id) => {
     const raison = await promptDialog('Raison du rejet :', { placeholder: 'Ex: Créneau non disponible', confirmLabel: 'Rejeter' })
     if (!raison) return
-    try {
-      await api.put(`/rendez-vous/${id}/reject`, { raison })
-      setRdvEnAttente(prev => prev.filter(r => r.id !== id))
-      setStats(prev => ({ ...prev, rdvEnAttente: prev.rdvEnAttente - 1 }))
-      toast.success('Rendez-vous rejeté')
-    } catch { toast.error('Erreur lors du rejet') }
+    rejectMutation.mutate({ _config: { url: `/rendez-vous/${id}/reject` }, raison })
   }
 
   const STATS = [

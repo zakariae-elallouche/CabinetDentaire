@@ -10,48 +10,51 @@ use App\Models\SaaSInvoice;
 use App\Models\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class SuperAdminController extends Controller
 {
     public function stats()
     {
-        $now = now();
-        $monthStart = $now->copy()->startOfMonth();
+        return response()->json(Cache::remember('superadmin.stats', 600, function () {
+            $now = now();
+            $monthStart = $now->copy()->startOfMonth();
 
-        $total = Tenant::count();
-        $actifs = Tenant::where('statut', 'actif')->count();
-        $essai = Tenant::where('statut', 'essai')->count();
-        $suspendus = Tenant::whereIn('statut', ['suspendu', 'expire'])->count();
+            $total = Tenant::count();
+            $actifs = Tenant::where('statut', 'actif')->count();
+            $essai = Tenant::where('statut', 'essai')->count();
+            $suspendus = Tenant::whereIn('statut', ['suspendu', 'expire'])->count();
 
-        $newSignups = Tenant::where('created_at', '>=', $monthStart)->count();
+            $newSignups = Tenant::where('created_at', '>=', $monthStart)->count();
 
-        $expiringTrials = Tenant::where('statut', 'essai')
-            ->whereNotNull('trial_ends_at')
-            ->whereBetween('trial_ends_at', [$now, $now->copy()->addDays(7)])
-            ->get(['id', 'nom_clinique', 'slug', 'email_contact', 'trial_ends_at']);
+            $expiringTrials = Tenant::where('statut', 'essai')
+                ->whereNotNull('trial_ends_at')
+                ->whereBetween('trial_ends_at', [$now, $now->copy()->addDays(7)])
+                ->get(['id', 'nom_clinique', 'slug', 'email_contact', 'trial_ends_at']);
 
-        $mrr = Facture::where('statut', 'payee')
-            ->whereMonth('date_paiement', $now->month)
-            ->whereYear('date_paiement', $now->year)
-            ->sum('montant_total');
+            $mrr = Facture::where('statut', 'payee')
+                ->whereMonth('date_paiement', $now->month)
+                ->whereYear('date_paiement', $now->year)
+                ->sum('montant_total');
 
-        $churn = Tenant::whereIn('statut', ['expire', 'suspendu'])
-            ->where('updated_at', '>=', $monthStart)
-            ->count();
+            $churn = Tenant::whereIn('statut', ['expire', 'suspendu'])
+                ->where('updated_at', '>=', $monthStart)
+                ->count();
 
-        return response()->json([
-            'tenants' => [
-                'total' => $total,
-                'actifs' => $actifs,
-                'essai' => $essai,
-                'suspendus' => $suspendus,
-            ],
-            'mrr' => $mrr,
-            'new_signups' => $newSignups,
-            'expiring_trials' => $expiringTrials,
-            'churn' => $churn,
-        ]);
+            return [
+                'tenants' => [
+                    'total' => $total,
+                    'actifs' => $actifs,
+                    'essai' => $essai,
+                    'suspendus' => $suspendus,
+                ],
+                'mrr' => $mrr,
+                'new_signups' => $newSignups,
+                'expiring_trials' => $expiringTrials,
+                'churn' => $churn,
+            ];
+        }));
     }
 
     public function tenants(Request $request)
@@ -164,27 +167,29 @@ class SuperAdminController extends Controller
 
     public function monthlyStats()
     {
-        $months = collect();
-        $now = now();
+        return response()->json(Cache::remember('superadmin.monthly_stats', 600, function () {
+            $months = collect();
+            $now = now();
 
-        for ($i = 5; $i >= 0; $i--) {
-            $date = $now->copy()->startOfMonth()->subMonths($i);
-            $end  = $date->copy()->endOfMonth();
+            for ($i = 5; $i >= 0; $i--) {
+                $date = $now->copy()->startOfMonth()->subMonths($i);
+                $end  = $date->copy()->endOfMonth();
 
-            $signups = Tenant::whereBetween('created_at', [$date, $end])->count();
+                $signups = Tenant::whereBetween('created_at', [$date, $end])->count();
 
-            $mrr = SaaSInvoice::where('statut', 'paid')
-                ->whereBetween('date_paiement', [$date, $end])
-                ->sum('montant');
+                $mrr = SaaSInvoice::where('statut', 'paid')
+                    ->whereBetween('date_paiement', [$date, $end])
+                    ->sum('montant');
 
-            $months->push([
-                'month'   => $date->format('M'),
-                'signups' => $signups,
-                'mrr'     => (int) $mrr,
-            ]);
-        }
+                $months->push([
+                    'month'   => $date->format('M'),
+                    'signups' => $signups,
+                    'mrr'     => (int) $mrr,
+                ]);
+            }
 
-        return response()->json(['months' => $months]);
+            return ['months' => $months];
+        }));
     }
 
     // ─── Plans CRUD ────────────────────────────────────────────────

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import { generateOrdonnancePDF } from '../../utils/ordonnancePDF'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -16,32 +16,21 @@ const fmtDate = (dateStr) => {
 }
 
 function MyPrescriptions() {
-  const [prescriptions, setPrescriptions] = useState([])
-  const [loading, setLoading]             = useState(true)
-  const [error, setError]                 = useState(false)
-  const [selected, setSelected]           = useState(null)
-  const [patientName, setPatientName]     = useState('—')
+  const [selected, setSelected] = useState(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const meRes = await api.get('/me')
-        const { id, prenom, nom } = meRes.data.profile
-        setPatientName(`${prenom || ''} ${nom || ''}`.trim() || '—')
-        const res = await api.get(`/patient/${id}/ordonnances`)
-        setPrescriptions(res.data)
-      } catch {
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+  const { data: meData } = useApiQuery('me', '/me')
+  const profile = meData?.profile
+  const patientId = profile?.id
+  const patientName = profile ? `${profile.prenom || ''} ${profile.nom || ''}`.trim() || '—' : '—'
+  const { data: prescriptions = [], isLoading, isError } = useApiQuery(
+    ['patient-ordonnances', patientId],
+    `/patient/${patientId}/ordonnances`,
+    { enabled: !!patientId }
+  )
 
   const generatePDF = (p) => generateOrdonnancePDF(p, patientName)
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading || !patientId) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

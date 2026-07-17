@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { confirmDialog } from '../../components/DialogProvider'
 import EmptyState from '../../components/EmptyState'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import api from '../../api'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
@@ -30,11 +31,11 @@ const FILTERS = [
 function MyAppointments() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [appointments, setAppointments] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [detail, setDetail] = useState(null)
   const [detailLoading, setDetailLoading] = useState(false)
+
+  const { data: appointments = [], isLoading } = useApiQuery('my-rdv', '/rendez-vous')
 
   const openDetail = async (id) => {
     setDetailLoading(true)
@@ -49,31 +50,15 @@ function MyAppointments() {
     }
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await api.get('/rendez-vous')
-        setAppointments(res.data)
-      } catch (err) {
-        console.error('Erreur chargement RDV')
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+  const cancelMutation = useApiMutation('delete', null, {
+    onSuccess: () => toast.success('Rendez-vous annulé'),
+    onError: () => toast.error("Erreur lors de l'annulation"),
+    invalidate: 'my-rdv',
+  })
 
   const handleCancel = async (id) => {
     if (!await confirmDialog('Annuler ce rendez-vous ?', { danger: true, confirmLabel: 'Oui, annuler' })) return
-    try {
-      await api.delete(`/rendez-vous/${id}`)
-      setAppointments(appointments.map(r =>
-        r.id === id ? { ...r, statut: 'ANNULÉ' } : r
-      ))
-      toast.success('Rendez-vous annulé')
-    } catch {
-      toast.error("Erreur lors de l'annulation")
-    }
+    cancelMutation.mutate({ _config: { url: `/rendez-vous/${id}` } })
   }
 
   const filtered = (filter
@@ -102,7 +87,7 @@ function MyAppointments() {
     return map[statut] || map['EN_ATTENTE']
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

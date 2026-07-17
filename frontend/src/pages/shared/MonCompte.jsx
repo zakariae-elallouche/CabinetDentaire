@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
 import { toast } from 'react-toastify'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -29,36 +29,40 @@ function MonCompte() {
   const [editingPrenom, setEditingPrenom] = useState(false)
   const [prenom, setPrenom] = useState('')
   const [prenomDraft, setPrenomDraft] = useState('')
-  const [loading, setLoading] = useState(true)
+  const { data: meData, isLoading } = useApiQuery('me', '/me')
 
   useEffect(() => {
-    api.get('/me').then(res => {
+    if (!meData?.profile) return
+    const p = meData.profile
+    setProfile(p)
+    setTelephone(p.telephone || ''); setTelDraft(p.telephone || '')
+    setNomClinique(p.nom_clinique || ''); setNomCliniqueDraft(p.nom_clinique || '')
+    setNom(p.nom || ''); setNomDraft(p.nom || '')
+    setPrenom(p.prenom || ''); setPrenomDraft(p.prenom || '')
+  }, [meData])
+
+  const changePasswordMutation = useApiMutation('put', '/password', {
+    onSuccess: () => { toast.success('Mot de passe modifié'); setPwForm({ ancien: '', nouveau: '' }) },
+    onError: (err) => toast.error(err?.response?.data?.errors?.ancien?.[0] || err?.response?.data?.message || 'Erreur'),
+  })
+
+  const updateProfileMutation = useApiMutation('put', '/me', {
+    onSuccess: (res) => {
       setProfile(res.data.profile)
-      const tel = res.data.profile?.telephone || ''
-      setTelephone(tel)
-      setTelDraft(tel)
-      const nc = res.data.profile?.nom_clinique || ''
-      setNomClinique(nc)
-      setNomCliniqueDraft(nc)
-      const n = res.data.profile?.nom || ''
-      setNom(n)
-      setNomDraft(n)
-      const p = res.data.profile?.prenom || ''
-      setPrenom(p)
-      setPrenomDraft(p)
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+      if (res.data.profile?.telephone !== undefined) { setTelephone(res.data.profile.telephone); setTelDraft(res.data.profile.telephone) }
+      if (res.data.profile?.nom !== undefined) { setNom(res.data.profile.nom); setNomDraft(res.data.profile.nom) }
+      if (res.data.profile?.prenom !== undefined) { setPrenom(res.data.profile.prenom); setPrenomDraft(res.data.profile.prenom) }
+      if (res.data.profile?.nom_clinique !== undefined) { setNomClinique(res.data.profile.nom_clinique); setNomCliniqueDraft(res.data.profile.nom_clinique) }
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: 'me',
+  })
 
   const changePw = async (e) => {
     e.preventDefault()
     setSaving(true)
-    try {
-      await api.put('/password', pwForm)
-      toast.success('Mot de passe modifié')
-      setPwForm({ ancien: '', nouveau: '' })
-    } catch (err) {
-      toast.error(err.response?.data?.errors?.ancien?.[0] || err.response?.data?.message || 'Erreur')
-    }
+    try { await changePasswordMutation.mutateAsync(pwForm) }
+    catch { /* handled */ }
     setSaving(false)
   }
 
@@ -67,36 +71,27 @@ function MonCompte() {
   const saveTelephone = async () => {
     setSavingTel(true)
     try {
-      const res = await api.put('/me', { telephone: telDraft })
-      setProfile(res.data.profile)
-      setTelephone(telDraft)
+      await updateProfileMutation.mutateAsync({ telephone: telDraft })
       setEditingTel(false)
       toast.success('Téléphone mis à jour')
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+    } catch { /* handled */ }
     setSavingTel(false)
   }
 
   const saveField = async (field, value, setEditing, setValue, setDraft) => {
     setSavingTel(true)
     try {
-      const res = await api.put('/me', { [field]: value })
-      setProfile(res.data.profile)
-      setValue(value)
-      setDraft(value)
-      setEditing(false)
+      await updateProfileMutation.mutateAsync({ [field]: value })
+      setValue(value); setDraft(value); setEditing(false)
       toast.success('Mis à jour')
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+    } catch { /* handled */ }
     setSavingTel(false)
   }
 
   const cols = profile ? Object.entries(profile).filter(([k]) => !['id', 'tenant_id', 'utilisateur_id', 'utilisateur', 'created_at', 'updated_at', 'numero_employe', 'statut', 'slug', 'plan', 'ville', 'adresse', 'email_contact', 'date_naissance', 'sexe', 'contact_urgence', 'notes_generales'].includes(k)) : []
   const isAdmin = user?.role === 'ADMIN_CLINIQUE'
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

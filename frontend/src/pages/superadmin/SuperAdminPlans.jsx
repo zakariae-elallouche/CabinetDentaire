@@ -1,37 +1,31 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import AnimateIn from '../../components/AnimateIn'
 import DonutLoader from '../../components/DonutLoader'
 
 
 function SuperAdminPlans() {
-  const [plans, setPlans] = useState([])
-  const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ nom: '', prix: '', duree_jours: 30, description: '', fonctionnalites: '', recommandations: '' })
+  const [saving, setSaving] = useState(false)
 
-  const load = () => {
-    setLoading(true)
-    api.get('/superadmin/plans').then(r => setPlans(r.data)).catch(() => toast.error('Erreur chargement plans'))
-      .finally(() => setLoading(false))
+  const { data: plans = [], isLoading } = useApiQuery('superadmin-plans', '/superadmin/plans')
+
+  const deletePlanMutation = useApiMutation('delete', null, {
+    onSuccess: () => toast.success('Plan supprimé'),
+    onError: (err) => toast.error(err?.response?.data?.errors?.plan?.[0] || 'Erreur de suppression'),
+    invalidate: 'superadmin-plans',
+  })
+
+  const handleDelete = (id) => {
+    if (!window.confirm('Supprimer ce plan définitivement ?')) return
+    deletePlanMutation.mutate({ _config: { url: `/superadmin/plans/${id}` } })
   }
 
-  useEffect(() => { load() }, [])
-
-  const handleDelete = async (id) => {
-    if (!confirm('Supprimer ce plan définitivement ?')) return
-    try {
-      await api.delete(`/superadmin/plans/${id}`)
-      toast.success('Plan supprimé')
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.errors?.plan?.[0] || 'Erreur de suppression')
-    }
-  }
-
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
@@ -110,6 +104,15 @@ function PlanForm({ plan, onClose, onSaved }) {
   })
   const [saving, setSaving] = useState(false)
 
+  const savePlanMutation = useApiMutation(null, null, {
+    onSuccess: () => { onSaved(); onClose() },
+    onError: (err) => {
+      const msg = err?.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : 'Erreur'
+      toast.error(msg)
+    },
+    invalidate: 'superadmin-plans',
+  })
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSaving(true)
@@ -122,18 +125,13 @@ function PlanForm({ plan, onClose, onSaved }) {
         features: form.features.split('\n').filter(Boolean),
       }
       if (plan) {
-        await api.put(`/superadmin/plans/${plan.id}`, payload)
+        await savePlanMutation.mutateAsync({ _config: { url: `/superadmin/plans/${plan.id}`, method: 'put' }, ...payload })
         toast.success('Plan modifié')
       } else {
-        await api.post('/superadmin/plans', payload)
+        await savePlanMutation.mutateAsync({ _config: { url: '/superadmin/plans', method: 'post' }, ...payload })
         toast.success('Plan créé')
       }
-      onSaved()
-      onClose()
-    } catch (err) {
-      const msg = err.response?.data?.errors ? Object.values(err.response.data.errors).flat().join(', ') : 'Erreur'
-      toast.error(msg)
-    }
+    } catch { /* handled */ }
     setSaving(false)
   }
 

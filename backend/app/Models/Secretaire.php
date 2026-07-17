@@ -9,8 +9,6 @@ class Secretaire extends Model
 {
     use BelongsToTenant;
 
-    protected $with = ['utilisateur'];
-
     protected $appends = ['nom', 'prenom'];
 
     protected $fillable = [

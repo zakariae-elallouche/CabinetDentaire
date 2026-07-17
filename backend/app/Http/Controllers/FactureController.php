@@ -18,7 +18,7 @@ class FactureController extends Controller
             abort(403);
         }
 
-        return response()->json(Facture::with('patient')->get());
+        return response()->json(Facture::with('patient')->paginate(25));
     }
 
     public function show(Request $request, $id)
@@ -47,7 +47,7 @@ class FactureController extends Controller
             Facture::with(['patient', 'visite.operations', 'visite.dentiste'])
                 ->where('patient_id', $id)
                 ->orderByDesc('date_facture')
-                ->get()
+                ->paginate(25)
         );
     }
 

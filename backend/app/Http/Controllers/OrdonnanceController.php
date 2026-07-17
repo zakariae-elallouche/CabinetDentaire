@@ -91,6 +91,6 @@ class OrdonnanceController extends Controller
             $query->where('statut', $request->statut);
         }
 
-        return response()->json($query->orderByDesc('date_delivrance')->get());
+        return response()->json($query->orderByDesc('date_delivrance')->paginate(25));
     }
 }

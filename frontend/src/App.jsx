@@ -1,57 +1,45 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute'
 
-// ─── Auth ───
-import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import RegisterClinic from './pages/auth/RegisterClinic'
-import ForgotPassword from './pages/auth/ForgotPassword'
-import ResetPassword from './pages/auth/ResetPassword'
-
-// ─── Shared ───
-import SubscriptionBlocked from './pages/shared/SubscriptionBlocked'
-
-// ─── Admin ───
-import AdminDashboard from './pages/admin/AdminDashboard'
-import ManageTeam from './pages/admin/ManageTeam'
-import BillingPage from './pages/admin/BillingPage'
-import ParametresClinique from './pages/admin/ParametresClinique'
-import GestionCatalogueOperations from './pages/admin/GestionCatalogueOperations'
-import GestionMedicaments from './pages/admin/GestionMedicaments'
-import MonCompte from './pages/shared/MonCompte'
-
-// ─── Super Admin ───
-import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard'
-import SuperAdminTenants from './pages/superadmin/SuperAdminTenants'
-import SuperAdminTenantDetail from './pages/superadmin/SuperAdminTenantDetail'
-
-// ─── Patient ───
-import PatientDashboard from './pages/patient/PatientDashboard'
-import BookAppointment from './pages/patient/BookAppointment'
-import MyAppointments from './pages/patient/MyAppointments'
-import MyVisits from './pages/patient/MyVisits'
-import MyPrescriptions from './pages/patient/MyPrescriptions'
-import MyInvoices from './pages/patient/MyInvoices'
-import MyProfile from './pages/patient/MyProfile'
-
-// ─── Secretaire ───
-import SecretaireDashboard from './pages/secretaire/SecretaireDashboard'
-import ManageAppointments from './pages/secretaire/ManageAppointments'
-import ManagePayments from './pages/secretaire/ManagePayments'
-
-import PatientsList from './pages/secretaire/PatientsList'
-
-// ─── Dentiste ───
-import DentisteDashboard from './pages/dentiste/DentisteDashboard'
-import AgendaDuJour from './pages/dentiste/AgendaDuJour'
-import VisiteDetail from './pages/dentiste/VisiteDetail'
-import RecordVisit from './pages/dentiste/RecordVisit'
-import IssuePrescription from './pages/dentiste/IssuePrescription'
-import PatientHistory from './pages/dentiste/PatientHistory'
+const Login = lazy(() => import('./pages/auth/Login'))
+const Register = lazy(() => import('./pages/auth/Register'))
+const RegisterClinic = lazy(() => import('./pages/auth/RegisterClinic'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const SubscriptionBlocked = lazy(() => import('./pages/shared/SubscriptionBlocked'))
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
+const ManageTeam = lazy(() => import('./pages/admin/ManageTeam'))
+const BillingPage = lazy(() => import('./pages/admin/BillingPage'))
+const ParametresClinique = lazy(() => import('./pages/admin/ParametresClinique'))
+const GestionCatalogueOperations = lazy(() => import('./pages/admin/GestionCatalogueOperations'))
+const GestionMedicaments = lazy(() => import('./pages/admin/GestionMedicaments'))
+const MonCompte = lazy(() => import('./pages/shared/MonCompte'))
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/SuperAdminDashboard'))
+const SuperAdminTenants = lazy(() => import('./pages/superadmin/SuperAdminTenants'))
+const SuperAdminTenantDetail = lazy(() => import('./pages/superadmin/SuperAdminTenantDetail'))
+const PatientDashboard = lazy(() => import('./pages/patient/PatientDashboard'))
+const BookAppointment = lazy(() => import('./pages/patient/BookAppointment'))
+const MyAppointments = lazy(() => import('./pages/patient/MyAppointments'))
+const MyVisits = lazy(() => import('./pages/patient/MyVisits'))
+const MyPrescriptions = lazy(() => import('./pages/patient/MyPrescriptions'))
+const MyInvoices = lazy(() => import('./pages/patient/MyInvoices'))
+const MyProfile = lazy(() => import('./pages/patient/MyProfile'))
+const SecretaireDashboard = lazy(() => import('./pages/secretaire/SecretaireDashboard'))
+const ManageAppointments = lazy(() => import('./pages/secretaire/ManageAppointments'))
+const ManagePayments = lazy(() => import('./pages/secretaire/ManagePayments'))
+const PatientsList = lazy(() => import('./pages/secretaire/PatientsList'))
+const DentisteDashboard = lazy(() => import('./pages/dentiste/DentisteDashboard'))
+const AgendaDuJour = lazy(() => import('./pages/dentiste/AgendaDuJour'))
+const VisiteDetail = lazy(() => import('./pages/dentiste/VisiteDetail'))
+const RecordVisit = lazy(() => import('./pages/dentiste/RecordVisit'))
+const IssuePrescription = lazy(() => import('./pages/dentiste/IssuePrescription'))
+const PatientHistory = lazy(() => import('./pages/dentiste/PatientHistory'))
 
 function App() {
   return (
     <BrowserRouter>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-500">Chargement…</div>}>
       <Routes>
 
         <Route path="/" element={<Navigate to="/login" />} />
@@ -235,6 +223,7 @@ function App() {
         } />
 
       </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

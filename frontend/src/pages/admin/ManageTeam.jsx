@@ -1,61 +1,62 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import AnimateIn from '../../components/AnimateIn'
 import DonutLoader from '../../components/DonutLoader'
 
 function ManageTeam() {
   const isMobile = useIsMobile()
   const navigate = useNavigate()
-  const [members, setMembers] = useState([])
-  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ nom: '', prenom: '', email: '', role: 'secretaire' })
   const [sending, setSending] = useState(false)
   const [newMemberPw, setNewMemberPw] = useState(null)
 
-  const load = () => {
-    setLoading(true)
-    api.get('/invitations').then(r => setMembers(r.data)).catch(() => {}).finally(() => setLoading(false))
-  }
+  const { data: members = [], isLoading } = useApiQuery('invitations', '/invitations')
 
-  useEffect(() => { load() }, [])
+  const addMutation = useApiMutation('post', '/invitations', {
+    onSuccess: (res) => {
+      setNewMemberPw(res.data)
+      setForm({ nom: '', prenom: '', email: '', role: 'secretaire' })
+      setShowForm(false)
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: 'invitations',
+  })
+
+  const resetPwMutation = useApiMutation('put', null, {
+    onSuccess: (res) => setNewMemberPw(res.data),
+    onError: () => toast.error('Erreur'),
+  })
+
+  const deleteMutation = useApiMutation('delete', null, {
+    onSuccess: () => toast.success('Membre supprimé'),
+    onError: () => toast.error('Erreur'),
+    invalidate: 'invitations',
+  })
 
   const addMember = async (e) => {
     e.preventDefault()
     setSending(true)
     try {
-      const res = await api.post('/invitations', form)
-      setNewMemberPw(res.data)
-      setForm({ nom: '', prenom: '', email: '', role: 'secretaire' })
-      setShowForm(false)
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+      await addMutation.mutateAsync(form)
+    } catch { /* handled */ }
     setSending(false)
   }
 
-  const resetPw = async (id) => {
-    try {
-      const res = await api.put(`/invitations/${id}/password`)
-      setNewMemberPw(res.data)
-    } catch { toast.error('Erreur') }
+  const resetPw = (id) => {
+    resetPwMutation.mutate({ _config: { url: `/invitations/${id}/password` } })
   }
 
-  const deleteMember = async (id, name) => {
+  const deleteMember = (id, name) => {
     if (!window.confirm(`Supprimer ${name} de l'équipe ?`)) return
-    try {
-      await api.delete(`/invitations/${id}`)
-      toast.success('Membre supprimé')
-      load()
-    } catch { toast.error('Erreur') }
+    deleteMutation.mutate({ _config: { url: `/invitations/${id}` } })
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

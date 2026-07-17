@@ -1,26 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import AnimateIn from '../../components/AnimateIn'
 import DonutLoader from '../../components/DonutLoader'
 
 function GestionCatalogueOperations() {
   const isMobile = useIsMobile()
-  const [ops, setOps] = useState([])
   const [form, setForm] = useState({ nom: '', description: '', cout: '' })
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [loading, setLoading] = useState(true)
 
-  const load = () => {
-    setLoading(true)
-    api.get('/operations').then(r => setOps(r.data)).catch(() => {}).finally(() => setLoading(false))
-  }
+  const { data: ops = [], isLoading } = useApiQuery('operations', '/operations')
 
-  useEffect(() => { load() }, [])
+  const saveMutation = useApiMutation(null, null, {
+    onSuccess: () => {
+      setForm({ nom: '', description: '', cout: '' })
+      setEditing(null)
+      setShowForm(false)
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: 'operations',
+  })
+
+  const deleteMutation = useApiMutation('delete', null, {
+    onSuccess: () => toast.success('Opération supprimée'),
+    onError: () => toast.error('Erreur'),
+    invalidate: 'operations',
+  })
 
   const save = async (e) => {
     e.preventDefault()
@@ -28,19 +37,13 @@ function GestionCatalogueOperations() {
     try {
       const payload = { nom: form.nom, description: form.description, cout: parseFloat(form.cout) || 0 }
       if (editing) {
-        await api.put(`/operations/${editing}`, payload)
+        await saveMutation.mutateAsync({ _config: { url: `/operations/${editing}`, method: 'put' }, ...payload })
         toast.success('Opération modifiée')
       } else {
-        await api.post('/operations', payload)
+        await saveMutation.mutateAsync({ _config: { url: '/operations', method: 'post' }, ...payload })
         toast.success('Opération ajoutée')
       }
-      setForm({ nom: '', description: '', cout: '' })
-      setEditing(null)
-      setShowForm(false)
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+    } catch { /* handled by onError */ }
     setSaving(false)
   }
 
@@ -52,14 +55,10 @@ function GestionCatalogueOperations() {
 
   const remove = async (id, nom) => {
     if (!window.confirm(`Supprimer l'opération "${nom}" ?`)) return
-    try {
-      await api.delete(`/operations/${id}`)
-      toast.success('Opération supprimée')
-      load()
-    } catch { toast.error('Erreur') }
+    deleteMutation.mutate({ _config: { url: `/operations/${id}` } })
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

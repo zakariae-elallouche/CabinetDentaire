@@ -179,7 +179,7 @@ function Login() {
   const desktopView = (
     <div style={{
       minHeight: '100vh',
-      background: `url('/background-dentaspace.png') center/cover no-repeat`,
+      background: `url('/background-dentaspace.webp') center/cover no-repeat`,
       position: 'relative',
       display: 'flex',
       alignItems: 'center',
@@ -215,7 +215,7 @@ function Login() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 11, marginBottom: 42,
           }}>
-            <img src="/DentASpace-LogoBG.png" alt="Dent A Space"
+            <img src="/DentASpace-LogoBG.webp" alt="Dent A Space"
               style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 10 }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 17 }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>
@@ -247,8 +247,9 @@ function Login() {
           }} />
           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
             <img
-              src="/unDrawn.png"
+              src="/unDrawn.webp"
               alt="Authentication"
+              loading="lazy"
               style={{ width: '100%', maxWidth: 380, height: 'auto', display: 'block' }}
             />
             <p style={{
@@ -266,7 +267,8 @@ function Login() {
   const mobileView = (
     <div style={{
       minHeight: '100dvh',
-      background: `url('/background-dentaspace.png') center/cover no-repeat`,
+      background: 'linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.35)), var(--ink)',
+      backgroundSize: 'cover',
       position: 'relative',
       display: 'flex',
       flexDirection: 'column',
@@ -287,7 +289,7 @@ function Login() {
           display: 'flex', alignItems: 'center', gap: 11, marginBottom: 28,
           justifyContent: 'center',
         }}>
-          <img src="/DentASpace-LogoBG.png" alt="Dent A Space"
+          <img src="/DentASpace-LogoBG.webp" alt="Dent A Space"
             style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 9 }} />
           <div>
             <div style={{ fontWeight: 600, fontSize: 16, color: '#fff' }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>

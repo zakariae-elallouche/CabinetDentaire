@@ -8,7 +8,9 @@ if (!document.getElementById(styleId)) {
   document.head.appendChild(style)
 }
 
-export default function DonutLoader({ size = 36, inline }) {
+import { memo } from 'react'
+
+export default memo(function DonutLoader({ size = 36, inline }) {
   const spinner = (
     <div
       style={{
@@ -35,4 +37,4 @@ export default function DonutLoader({ size = 36, inline }) {
       {spinner}
     </div>
   )
-}
+})

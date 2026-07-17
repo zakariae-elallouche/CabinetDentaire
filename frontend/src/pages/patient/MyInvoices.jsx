@@ -1,34 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import jsPDF from 'jspdf'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
 function MyInvoices() {
-  const [invoices, setInvoices] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
   const [selectedInvoice, setSelectedInvoice] = useState(null)
   const isMobile = useIsMobile()
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const meRes = await api.get('/me')
-        const patientId = meRes.data.profile.id
-        const res = await api.get(`/patient/${patientId}/factures`)
-        setInvoices(res.data)
-      } catch {
-        setError(true)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
+  const { data: meData } = useApiQuery('me', '/me')
+  const patientId = meData?.profile?.id
+  const { data: invoices = [], isLoading, isError } = useApiQuery(
+    ['patient-factures', patientId],
+    `/patient/${patientId}/factures`,
+    { enabled: !!patientId }
+  )
 
   const formatDate = (dateStr) => {
     if (!dateStr) return ''
@@ -237,7 +226,7 @@ function MyInvoices() {
     </div>
   )
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading || !patientId) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

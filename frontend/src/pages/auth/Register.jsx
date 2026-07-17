@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
 import AnimateIn from '../../components/AnimateIn'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 
 
@@ -44,8 +44,6 @@ const btnBase = {
 function Register() {
   const [searchParams] = useSearchParams()
   const clinicSlug = searchParams.get('slug')
-  const [clinic, setClinic] = useState(null)
-  const [clinicLoading, setClinicLoading] = useState(!!clinicSlug)
   const [formData, setFormData] = useState({
     nom: '', prenom: '', email: '', password: '',
     password_confirmation: '', telephone: '', adresse: '',
@@ -61,14 +59,11 @@ function Register() {
 
   useEffect(() => { setMounted(true) }, [])
 
-  useEffect(() => {
-    if (clinicSlug) {
-      api.get(`/clinics/${clinicSlug}`)
-        .then(r => setClinic(r.data))
-        .catch(() => setClinic(null))
-        .finally(() => setClinicLoading(false))
-    }
-  }, [clinicSlug])
+  const { data: clinic, isLoading: clinicLoading } = useApiQuery(
+    ['clinic', clinicSlug],
+    `/clinics/${clinicSlug}`,
+    { enabled: !!clinicSlug }
+  )
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -182,7 +177,7 @@ function Register() {
       <AnimateIn>
       <div style={{
         minHeight: '100dvh',
-        background: `url('/background-dentaspace.png') center/cover no-repeat`,
+        background: `url('/background-dentaspace.webp') center/cover no-repeat`,
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -203,7 +198,7 @@ function Register() {
             display: 'flex', alignItems: 'center', gap: 11, marginBottom: 28,
             justifyContent: 'center',
           }}>
-            <img src="/DentASpace-Logo.png" alt="Dent A Space"
+            <img src="/DentASpace-Logo.webp" alt="Dent A Space"
               style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 9 }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 16, color: '#fff' }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>
@@ -280,7 +275,7 @@ function Register() {
     <AnimateIn>
     <div style={{
       minHeight: '100vh',
-      background: `url('/background-dentaspace.png') center/cover no-repeat`,
+      background: `url('/background-dentaspace.webp') center/cover no-repeat`,
       position: 'relative',
       display: 'flex',
       alignItems: 'center',
@@ -315,7 +310,7 @@ function Register() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 11, marginBottom: 32,
           }}>
-            <img src="/DentASpace-Logo.png" alt="Dent A Space"
+            <img src="/DentASpace-Logo.webp" alt="Dent A Space"
               style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 10 }} />
             <div>
               <div style={{ fontWeight: 600, fontSize: 17 }}>Dent <span style={{ color: ACCENT }}>A</span> Space</div>

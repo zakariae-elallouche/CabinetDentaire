@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -27,46 +27,44 @@ const defaultHours = () => ({
 })
 
 function ParametresClinique() {
-  const [settings, setSettings] = useState(null)
   const [form, setForm] = useState({ nom_clinique: '', email_contact: '', telephone: '', adresse: '', ville: '', frais_visite: 200, horaires: defaultHours() })
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [feeConfirm, setFeeConfirm] = useState(null)
   const isMobile = useIsMobile()
 
-  const load = () => {
-    setLoading(true)
-    api.get('/admin/settings').then(r => {
-      const d = r.data
-      setSettings(d)
-      setForm({
-        nom_clinique: d.nom_clinique || '',
-        email_contact: d.email_contact || '',
-        telephone: d.telephone || '',
-        adresse: d.adresse || '',
-        ville: d.ville || '',
-        frais_visite: d.frais_visite ?? 200,
-        horaires: d.horaires || defaultHours(),
-      })
-    }).catch(() => {}).finally(() => setLoading(false))
-  }
+  useEffect(() => { /* initialisation done below via useApiQuery */ }, [])
 
-  useEffect(() => { load() }, [])
+  const { data: settingsData, isLoading } = useApiQuery('admin-settings', '/admin/settings')
+
+  useEffect(() => {
+    if (!settingsData) return
+    setForm({
+      nom_clinique: settingsData.nom_clinique || '',
+      email_contact: settingsData.email_contact || '',
+      telephone: settingsData.telephone || '',
+      adresse: settingsData.adresse || '',
+      ville: settingsData.ville || '',
+      frais_visite: settingsData.frais_visite ?? 200,
+      horaires: settingsData.horaires || defaultHours(),
+    })
+  }, [settingsData])
+
+  const saveMutation = useApiMutation('put', '/admin/settings', {
+    onSuccess: () => toast.success('Paramètres enregistrés'),
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: 'admin-settings',
+  })
 
   const saveSettings = async (e) => {
     e.preventDefault()
     setSaving(true)
-    const oldFee = settings?.frais_visite
+    const oldFee = settingsData?.frais_visite
     try {
-      const res = await api.put('/admin/settings', form)
-      setSettings(res.data)
-      toast.success('Paramètres enregistrés')
+      await saveMutation.mutateAsync(form)
       if (parseInt(form.frais_visite) !== parseInt(oldFee || 0)) {
         setFeeConfirm(parseInt(form.frais_visite))
       }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+    } catch { /* handled by mutation onError */ }
     setSaving(false)
   }
 
@@ -84,7 +82,7 @@ function ParametresClinique() {
     }))
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

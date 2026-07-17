@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -34,22 +34,12 @@ const StatIcon = ({ statut, size = 14 }) => {
 
 function ManageAppointments() {
   const isMobile = useIsMobile()
-  const [appointments, setAppointments] = useState([])
-  const [loading, setLoading]           = useState(true)
   const [filter, setFilter]             = useState('')
   const [search, setSearch]             = useState('')
   const [rejectModal, setRejectModal]   = useState(null)
   const [raison, setRaison]             = useState('')
 
-  useEffect(() => { fetchAppointments() }, [])
-
-  const fetchAppointments = async () => {
-    try {
-      const res = await api.get('/rendez-vous')
-      setAppointments(res.data)
-    } catch { console.error('Erreur chargement RDV') }
-    finally { setLoading(false) }
-  }
+  const { data: appointments = [], isLoading } = useApiQuery('rdv', '/rendez-vous')
 
   const pName = (rdv) => `${rdv.patient?.prenom || ''} ${rdv.patient?.nom || ''}`.trim() || '—'
 
@@ -61,23 +51,24 @@ function ManageAppointments() {
 
   const countBy = (key) => appointments.filter(r => r.statut === key).length
 
+  const confirmMutation = useApiMutation('put', null, {
+    onSuccess: () => toast.success('Rendez-vous confirmé'),
+    onError: () => toast.error('Erreur lors de la confirmation'),
+    invalidate: 'rdv',
+  })
+  const rejectMutation = useApiMutation('put', null, {
+    onSuccess: () => { setRejectModal(null); setRaison(''); toast.success('Rendez-vous rejeté') },
+    onError: () => toast.error('Erreur lors du rejet'),
+    invalidate: 'rdv',
+  })
+
   const handleConfirm = async (id) => {
-    try {
-      const res = await api.put(`/rendez-vous/${id}/confirm`)
-      setAppointments(prev => prev.map(r => r.id === id ? res.data : r))
-      toast.success('Rendez-vous confirmé')
-    } catch { toast.error('Erreur lors de la confirmation') }
+    confirmMutation.mutate({ _config: { url: `/rendez-vous/${id}/confirm` } })
   }
 
   const handleReject = async () => {
     if (!raison) { toast.warning('Entrez une raison'); return }
-    try {
-      const res = await api.put(`/rendez-vous/${rejectModal}/reject`, { raison })
-      setAppointments(prev => prev.map(r => r.id === rejectModal ? res.data : r))
-      setRejectModal(null)
-      setRaison('')
-      toast.success('Rendez-vous rejeté')
-    } catch { toast.error('Erreur lors du rejet') }
+    rejectMutation.mutate({ _config: { url: `/rendez-vous/${rejectModal}/reject` }, raison })
   }
 
   const chipStyle = (statut) => ({
@@ -96,7 +87,7 @@ function ManageAppointments() {
     return `${DAYS[dt.getDay()]}. ${+d} ${MONTHS[+m - 1]}`
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div>

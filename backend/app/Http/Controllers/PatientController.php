@@ -19,15 +19,15 @@ class PatientController extends Controller
             abort(403);
         }
 
-        return response()->json(Patient::all());
+        return response()->json(Patient::with('utilisateur')->paginate(25));
     }
 
     public function show(Request $request, $id)
     {
         $user    = $request->user();
-        $patient = Patient::findOrFail($id);
+        $patient = Patient::with('utilisateur')->findOrFail($id);
 
-        if ($user->role === 'patient' && $patient->utilisateur_id !== $user->id) {
+        if ($request->user()->role === 'patient' && $patient->utilisateur_id !== $request->user()->id) {
             abort(403);
         }
 
@@ -75,9 +75,9 @@ class PatientController extends Controller
         }
 
         return response()->json([
-            'visites'     => Visite::where('patient_id', $id)->get(),
-            'ordonnances' => Ordonnance::where('patient_id', $id)->get(),
-            'factures'    => Facture::where('patient_id', $id)->get(),
+            'visites'     => Visite::where('patient_id', $id)->paginate(25),
+            'ordonnances' => Ordonnance::where('patient_id', $id)->paginate(25),
+            'factures'    => Facture::where('patient_id', $id)->paginate(25),
         ]);
     }
 }

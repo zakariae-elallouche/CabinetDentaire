@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Medicament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class MedicamentController extends Controller
 {
@@ -12,7 +13,11 @@ class MedicamentController extends Controller
         $role = $request->user()->role;
         if (!in_array($role, ['dentiste', 'secretaire', 'admin_clinique'])) abort(403);
 
-        return response()->json(Medicament::all());
+        $data = Cache::remember('medicaments', 3600, function () {
+            return Medicament::paginate(25);
+        });
+
+        return response()->json($data);
     }
 
     public function store(Request $request)

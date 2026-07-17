@@ -1,39 +1,42 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import api from '../../api'
 import AnimateIn from '../../components/AnimateIn'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 
 function AcceptInvitation() {
   const { token } = useParams()
   const navigate = useNavigate()
 
-  const [invitation, setInvitation] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ nom: '', prenom: '', password: '', password_confirmation: '' })
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    api.get(`/invitations/${token}`)
-      .then(res => setInvitation(res.data))
-      .catch(err => setError(err.response?.data?.message || 'Invitation invalide'))
-      .finally(() => setLoading(false))
-  }, [token])
+  const { data: invitation, isLoading: loading } = useApiQuery(
+    ['invitation', token],
+    `/invitations/${token}`,
+    { enabled: !!token }
+  )
+
+  const acceptMutation = useApiMutation('post', null, {
+    onSuccess: (res) => {
+      const { token: newToken, user } = res.data
+      localStorage.setItem('token', newToken)
+      localStorage.setItem('user', JSON.stringify(user))
+      const routes = { SECRETAIRE: '/secretaire/dashboard', DENTISTE: '/dentiste/dashboard' }
+      navigate(routes[user.role] || '/login')
+    },
+    onError: (err) => setError(err?.response?.data?.message || "Erreur lors de l'acceptation"),
+  })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setSubmitting(true)
     setError('')
     try {
-      const res = await api.post(`/invitations/${token}/accept`, form)
-      const { token: newToken, user } = res.data
-      localStorage.setItem('token', newToken)
-      localStorage.setItem('user', JSON.stringify(user))
-      const routes = { SECRETAIRE: '/secretaire/dashboard', DENTISTE: '/dentiste/dashboard' }
-      navigate(routes[user.role] || '/login')
-    } catch (err) {
-      setError(err.response?.data?.message || 'Erreur lors de l\'acceptation')
-    }
+      await acceptMutation.mutateAsync({ _config: { url: `/invitations/${token}/accept` }, ...form })
+    } catch { /* handled */ }
+    setSubmitting(false)
+  }
     setSubmitting(false)
   }
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -15,50 +15,45 @@ function MyProfile() {
     date_naissance: '', sexe: '', contact_urgence: '', notes_generales: '',
   })
   const [passwords, setPasswords] = useState({ ancien: '', nouveau: '' })
-  const [loading, setLoading]     = useState(true)
-  const [toast, setToast]         = useState(null) // { type: 'ok'|'err', msg }
+  const [toast, setToast]         = useState(null)
 
   const showToast = (type, msg) => {
     setToast({ type, msg })
     setTimeout(() => setToast(null), 3000)
   }
 
+  const { data: meData, isLoading } = useApiQuery('me', '/me')
+
   useEffect(() => {
-    api.get('/me')
-      .then(res => setProfile(res.data.profile || {}))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+    if (meData?.profile) setProfile(meData.profile)
+  }, [meData])
 
   const handleChange = e => setProfile({ ...profile, [e.target.name]: e.target.value })
 
-  const handleSave = async () => {
-    try {
-      const res = await api.put('/me', profile)
-      setProfile(res.data.profile)
-      showToast('ok', 'Profil mis à jour avec succès.')
-    } catch {
-      showToast('err', 'Erreur lors de la mise à jour.')
-    }
-  }
+  const saveProfileMutation = useApiMutation('put', '/me', {
+    onSuccess: (res) => { setProfile(res.data.profile); showToast('ok', 'Profil mis à jour avec succès.') },
+    onError: () => showToast('err', 'Erreur lors de la mise à jour.'),
+    invalidate: 'me',
+  })
 
-  const handlePasswordChange = async () => {
+  const changePasswordMutation = useApiMutation('put', '/password', {
+    onSuccess: () => { showToast('ok', 'Mot de passe modifié.'); setPasswords({ ancien: '', nouveau: '' }) },
+    onError: () => showToast('err', 'Ancien mot de passe incorrect.'),
+  })
+
+  const handleSave = () => saveProfileMutation.mutate(profile)
+
+  const handlePasswordChange = () => {
     if (!passwords.ancien || !passwords.nouveau) {
       showToast('err', 'Remplissez les deux champs.')
       return
     }
-    try {
-      await api.put('/password', passwords)
-      showToast('ok', 'Mot de passe modifié.')
-      setPasswords({ ancien: '', nouveau: '' })
-    } catch {
-      showToast('err', 'Ancien mot de passe incorrect.')
-    }
+    changePasswordMutation.mutate(passwords)
   }
 
   const initials = ((profile.prenom || '')[0] || '') + ((profile.nom || '')[0] || '')
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

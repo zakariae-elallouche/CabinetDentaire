@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -16,15 +16,11 @@ function VisiteDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [visite, setVisite] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    api.get(`/visites/${id}`)
-      .then(res => setVisite(res.data))
-      .catch(() => setVisite(null))
-      .finally(() => setLoading(false))
-  }, [id])
+  const { data: visite, isLoading, isError } = useApiQuery(
+    ['visite', id],
+    `/visites/${id}`,
+    { enabled: !!id }
+  )
 
   const formatDate = (str) => {
     if (!str) return '—'
@@ -37,7 +33,7 @@ function VisiteDetail() {
 
   const totalOps = visite?.operations?.reduce((sum, op) => sum + parseFloat(op.cout || 0), 0) || 0
 
-  if (loading) return (
+  if (isLoading) return (
     <Layout>
       <p style={{ color: 'var(--ink-3)', padding: '3rem 0', textAlign: 'center' }}><DonutLoader /></p>
     </Layout>

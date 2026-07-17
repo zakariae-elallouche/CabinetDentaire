@@ -1,34 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import AnimateIn from '../../components/AnimateIn'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 
 
 function SuperAdminTenants() {
   const navigate = useNavigate()
-  const [tenants, setTenants] = useState([])
-  const [meta, setMeta] = useState(null)
-  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ statut: '', search: '' })
   const [page, setPage] = useState(1)
 
-  const load = (p = page) => {
-    setLoading(true)
-    const params = new URLSearchParams({ page: p, ...filters })
-    Object.keys(filters).forEach(k => { if (!filters[k]) params.delete(k) })
-    api.get(`/superadmin/tenants?${params}`).then(r => {
-      setTenants(r.data.data)
-      setMeta({ ...r.data, data: undefined })
-    }).catch(() => {}).finally(() => setLoading(false))
-  }
+  const params = new URLSearchParams({ page, ...filters })
+  Object.keys(filters).forEach(k => { if (!filters[k]) params.delete(k) })
 
-  useEffect(() => { load() }, [page])
+  const { data: response, isLoading } = useApiQuery(
+    ['superadmin-tenants', page, filters],
+    `/superadmin/tenants?${params}`
+  )
 
-  const search = () => { setPage(1); load(1) }
+  const tenants = response?.data || []
+  const meta = response ? { total: response.total, current_page: response.current_page, last_page: response.last_page } : null
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  const search = () => setPage(1)
+
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

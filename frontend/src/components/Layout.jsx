@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, React } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -75,7 +75,7 @@ function Layout({ children }) {
   const currentLabel = navLinks.find(l => l.path === location.pathname)?.label || clinicName
   const logoUrl = branding?.logo_url
     ? (branding.logo_url.startsWith('http') ? branding.logo_url : `https://cabinetdentaire.onrender.com/storage/${branding.logo_url}`)
-    : '/DentASpace-Logo.png'
+    : '/DentASpace-LogoBG.webp'
   const isWide = !isMobile && window.innerWidth > 1200
 
   const NavIcon = ({ type, size = 18 }) => {
@@ -196,35 +196,35 @@ function Layout({ children }) {
         </div>
 
         <div style={{ flex: 1, padding: '20px 16px 32px', overflowX: 'hidden' }}>
-          <SubscriptionBanner statut={tenantStatut} userRole={user?.role} />
-          {children}
-        </div>
+        <SubscriptionBanner statut={tenantStatut} userRole={user?.role} />
+        {children}
+      </div>
 
-        {/* Mobile sidebar drawer */}
-        {mobileMenuOpen && (
-          <>
-            <div
-              style={{
-                position: 'fixed', inset: 0, zIndex: 199,
-                background: 'rgba(0,0,0,0.3)',
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            />
+      {/* Mobile sidebar drawer */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 199,
+              background: 'rgba(0,0,0,0.3)',
+            }}
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          <div style={{
+            position: 'fixed', top: 0, left: 0, bottom: 0, width: 280,
+            zIndex: 200,
+            background: 'linear-gradient(rgba(10,20,40,0.82), rgba(10,20,40,0.82)), url(/background-dentaspace.webp) center/cover no-repeat',
+            boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+            display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
+            animation: 'slideInLeft 0.2s ease',
+          }}>
             <div style={{
-              position: 'fixed', top: 0, left: 0, bottom: 0, width: 280,
-              zIndex: 200,
-              background: 'linear-gradient(rgba(10,20,40,0.82), rgba(10,20,40,0.82)), url(/background-dentaspace.png) center/cover no-repeat',
-              boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
-              display: 'flex', flexDirection: 'column',
-              overflow: 'hidden',
-              animation: 'slideInLeft 0.2s ease',
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '16px 14px',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
             }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '16px 14px',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-              }}>
-                <img src={logoUrl} alt={clinicName} style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
+              <img src={logoUrl} alt={clinicName} loading="lazy" style={{ width: 32, height: 32, objectFit: 'contain', flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 14, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{clinicName}</div>
                 </div>
@@ -335,7 +335,7 @@ function Layout({ children }) {
     }}>
       {/* ─── Sidebar ─── */}
       <div style={{
-        background: 'linear-gradient(rgba(10,20,40,0.82), rgba(10,20,40,0.82)), url(/background-dentaspace.png) center/cover no-repeat',
+        background: 'linear-gradient(rgba(10,20,40,0.82), rgba(10,20,40,0.82)), url(/background-dentaspace.webp) center/cover no-repeat',
         borderRight: '1px solid rgba(255,255,255,0.08)',
         padding: collapsed ? '18px 8px' : '22px 14px',
         position: 'sticky', top: 0,
@@ -667,4 +667,4 @@ function SubscriptionBanner({ statut, userRole }) {
   )
 }
 
-export default Layout
+export default React.memo(Layout)

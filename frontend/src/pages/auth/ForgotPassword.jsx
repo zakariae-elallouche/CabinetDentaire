@@ -29,7 +29,7 @@ function ForgotPassword() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 11, marginBottom: 16 }}>
-            <img src="/DentASpace-LogoBG.png" alt="Dent A Space"
+            <img src="/DentASpace-LogoBG.webp" alt="Dent A Space"
               style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 10 }} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 600, fontSize: 17, color: 'var(--ink)' }}>Dent <span style={{ color: '#57c8cb' }}>A</span> Space</div>

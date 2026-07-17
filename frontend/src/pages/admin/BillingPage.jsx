@@ -1,30 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
 function BillingPage() {
   const isMobile = useIsMobile()
-  const [data, setData] = useState(null)
-  const [invoices, setInvoices] = useState([])
-  const [loading, setLoading] = useState(true)
   const [subscribing, setSubscribing] = useState(false)
 
-  const load = () => {
-    setLoading(true)
-    Promise.all([
-      api.get('/billing/status'),
-      api.get('/billing/invoices'),
-    ]).then(([sRes, iRes]) => {
-      setData(sRes.data)
-      setInvoices(iRes.data)
-    }).catch(() => {}).finally(() => setLoading(false))
-  }
+  const { data: billingStatus, isLoading: statusLoading } = useApiQuery('billing-status', '/billing/status')
+  const { data: invoices = [], isLoading: invoicesLoading } = useApiQuery('billing-invoices', '/billing/invoices')
+  const loading = statusLoading || invoicesLoading
 
-  useEffect(() => { load() }, [])
+  const data = billingStatus
 
   const tenant = data?.tenant
   const subscription = data?.subscription
@@ -32,15 +22,17 @@ function BillingPage() {
   const hasPending = !!nextInvoice
   const hasSubscription = !!subscription && subscription.statut === 'actif'
 
+  const subscribeMutation = useApiMutation('post', '/billing/subscribe', {
+    onSuccess: (res) => toast.success(res.data.message),
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: ['billing-status', 'billing-invoices'],
+  })
+
   const subscribe = async () => {
     setSubscribing(true)
     try {
-      const res = await api.post('/billing/subscribe', { methode_paiement: 'virement' })
-      toast.success(res.data.message)
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+      await subscribeMutation.mutateAsync({ methode_paiement: 'virement' })
+    } catch { /* handled */ }
     setSubscribing(false)
   }
 

@@ -1,26 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import AnimateIn from '../../components/AnimateIn'
 import DonutLoader from '../../components/DonutLoader'
 
 function GestionMedicaments() {
   const isMobile = useIsMobile()
-  const [meds, setMeds] = useState([])
   const [form, setForm] = useState({ nom: '', description: '', forme: '', dosage: '' })
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
-  const [loading, setLoading] = useState(true)
 
-  const load = () => {
-    setLoading(true)
-    api.get('/medicaments').then(r => setMeds(r.data)).catch(() => {}).finally(() => setLoading(false))
-  }
+  const { data: meds = [], isLoading } = useApiQuery('medicaments', '/medicaments')
 
-  useEffect(() => { load() }, [])
+  const saveMutation = useApiMutation(null, null, {
+    onSuccess: () => {
+      setForm({ nom: '', description: '', forme: '', dosage: '' })
+      setEditing(null)
+      setShowForm(false)
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    invalidate: 'medicaments',
+  })
+
+  const deleteMutation = useApiMutation('delete', null, {
+    onSuccess: () => toast.success('Médicament supprimé'),
+    onError: () => toast.error('Erreur'),
+    invalidate: 'medicaments',
+  })
 
   const save = async (e) => {
     e.preventDefault()
@@ -28,19 +37,13 @@ function GestionMedicaments() {
     try {
       const payload = { nom: form.nom, description: form.description, forme: form.forme, dosage: form.dosage }
       if (editing) {
-        await api.put(`/medicaments/${editing}`, payload)
+        await saveMutation.mutateAsync({ _config: { url: `/medicaments/${editing}`, method: 'put' }, ...payload })
         toast.success('Médicament modifié')
       } else {
-        await api.post('/medicaments', payload)
+        await saveMutation.mutateAsync({ _config: { url: '/medicaments', method: 'post' }, ...payload })
         toast.success('Médicament ajouté')
       }
-      setForm({ nom: '', description: '', forme: '', dosage: '' })
-      setEditing(null)
-      setShowForm(false)
-      load()
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Erreur')
-    }
+    } catch { /* handled by onError */ }
     setSaving(false)
   }
 
@@ -52,14 +55,10 @@ function GestionMedicaments() {
 
   const remove = async (id, nom) => {
     if (!window.confirm(`Supprimer le médicament "${nom}" ?`)) return
-    try {
-      await api.delete(`/medicaments/${id}`)
-      toast.success('Médicament supprimé')
-      load()
-    } catch { toast.error('Erreur') }
+    deleteMutation.mutate({ _config: { url: `/medicaments/${id}` } })
   }
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
-import api from '../../api'
 import { toast } from 'react-toastify'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import AnimateIn from '../../components/AnimateIn'
 
 
@@ -19,34 +19,36 @@ const statutConfig = {
 function SuperAdminTenantDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [data, setData] = useState(null)
   const [invoiceModal, setInvoiceModal] = useState(false)
   const [invForm, setInvForm] = useState({ montant: 299, date_echeance: '', notes: '' })
   const [invLoading, setInvLoading] = useState(false)
   const [confirmId, setConfirmId] = useState(null)
   const [confirmTrial, setConfirmTrial] = useState(null)
 
-  const load = () => {
-    api.get(`/superadmin/tenants/${id}`).then(r => setData(r.data)).catch(() => navigate('/superadmin/tenants'))
-  }
+  const { data: data } = useApiQuery(
+    ['superadmin-tenant', id],
+    `/superadmin/tenants/${id}`,
+    { enabled: !!id }
+  )
 
-  useEffect(() => { load() }, [id])
+  const actionMutation = useApiMutation('post', null, {
+    onSuccess: (res) => toast.success(res.data.message),
+    onError: () => toast.error('Erreur'),
+    invalidate: ['superadmin-tenant', id],
+  })
+
+  const confirmPaymentMutation = useApiMutation('post', null, {
+    onSuccess: (res) => { toast.success(res.data.message); setConfirmId(null) },
+    onError: () => toast.error('Erreur'),
+    invalidate: ['superadmin-tenant', id],
+  })
 
   const doAction = async (action, body = {}) => {
-    try {
-      const res = await api.post(`/superadmin/tenants/${id}/${action}`, body)
-      toast.success(res.data.message)
-      load()
-    } catch { toast.error('Erreur') }
+    actionMutation.mutate({ _config: { url: `/superadmin/tenants/${id}/${action}`, method: 'post' }, ...body })
   }
 
   const confirmPayment = async (invoiceId) => {
-    try {
-      const res = await api.post(`/superadmin/invoices/${invoiceId}/confirm`)
-      toast.success(res.data.message)
-      setConfirmId(null)
-      load()
-    } catch { toast.error('Erreur') }
+    confirmPaymentMutation.mutate({ _config: { url: `/superadmin/invoices/${invoiceId}/confirm`, method: 'post' } })
   }
 
   const daysUntil = (date) => {
@@ -497,7 +499,7 @@ function SuperAdminTenantDetail() {
                 if (!invForm.montant) { toast.warning('Montant requis'); return }
                 setInvLoading(true)
                 try {
-                  await api.post(`/superadmin/tenants/${id}/invoice`, invForm)
+                  await actionMutation.mutateAsync({ _config: { url: `/superadmin/tenants/${id}/invoice`, method: 'post' }, ...invForm })
                   toast.success('Facture créée')
                   setInvoiceModal(false)
                   setInvForm({ montant: 299, date_echeance: '', notes: '' })

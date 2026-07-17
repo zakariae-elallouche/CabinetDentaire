@@ -11,7 +11,9 @@ const IcoLoader = () => (
   </svg>
 )
 
-export default function EmptyState({ title, sub }) {
+import { memo } from 'react'
+
+export default memo(function EmptyState({ title, sub }) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column',
@@ -35,4 +37,4 @@ export default function EmptyState({ title, sub }) {
       )}
     </div>
   )
-}
+})

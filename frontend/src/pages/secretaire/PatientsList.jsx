@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { List } from 'react-window'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -24,29 +25,46 @@ const initials = (p) => `${p?.prenom?.[0] || ''}${p?.nom?.[0] || ''}`.toUpperCas
 function PatientsListView() {
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-  const [patients, setPatients] = useState([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    api.get('/patients')
-      .then(res => setPatients(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: patients = [], isLoading } = useApiQuery('patients', '/patients')
 
   const filtered = patients.filter(p => {
     const q = search.toLowerCase()
     return fullName(p).toLowerCase().includes(q) || p.telephone?.includes(search)
   })
 
-  if (loading) return (
+  if (isLoading) return (
     <Layout>
       <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>
         <DonutLoader />
       </div>
     </Layout>
   )
+
+  const ROW_HEIGHT = 56
+  const PatientRow = memo(({ index, style }) => {
+    const p = filtered[index]
+    return (
+      <div style={{ ...style, display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--line)', cursor: 'pointer', transition: 'background 0.1s' }}
+        onClick={() => navigate(`/secretaire/patient/${p.id}`)}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+      >
+        <div style={{ ...s.td, width: '8%', flexShrink: 0 }}><span style={s.idBadge}>#{String(p.id).padStart(4, '0')}</span></div>
+        <div style={{ ...s.td, width: '27%', flexShrink: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={s.avatar}>{initials(p)}</div>
+          <span style={{ fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fullName(p)}</span>
+        </div>
+        <div style={{ ...s.td, width: '15%', flexShrink: 0 }}>{p.telephone || '—'}</div>
+        <div style={{ ...s.td, width: '17%', flexShrink: 0 }}>{fmtDate(p.date_naissance)}</div>
+        <div style={{ ...s.td, width: '23%', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.adresse || '—'}</div>
+        <div style={{ ...s.td, width: '10%', flexShrink: 0, textAlign: 'right' }}>
+          <span style={s.viewLink}>Voir dossier →</span>
+        </div>
+      </div>
+    )
+  })
 
   return (
     <Layout>
@@ -82,38 +100,22 @@ function PatientsListView() {
         {filtered.length === 0 ? (
           <EmptyState title="Aucun patient trouvé" sub="Essayez un autre terme de recherche." />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  <th style={s.th}>#</th>
-                  <th style={s.th}>Nom complet</th>
-                  <th style={s.th}>Téléphone</th>
-                  <th style={s.th}>Date naissance</th>
-                  <th style={s.th}>Adresse</th>
-                  <th style={{ ...s.th, textAlign: 'right' }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(p => (
-                  <tr key={p.id} style={s.tr} onClick={() => navigate(`/secretaire/patient/${p.id}`)}>
-                    <td style={s.td}><span style={s.idBadge}>#{String(p.id).padStart(4, '0')}</span></td>
-                    <td style={s.td}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={s.avatar}>{initials(p)}</div>
-                        <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{fullName(p)}</span>
-                      </div>
-                    </td>
-                    <td style={s.td}>{p.telephone || '—'}</td>
-                    <td style={s.td}>{fmtDate(p.date_naissance)}</td>
-                    <td style={{ ...s.td, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.adresse || '—'}</td>
-                    <td style={{ ...s.td, textAlign: 'right' }}>
-                      <span style={s.viewLink}>Voir dossier →</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ border: '1px solid var(--line)', borderRadius: '12px', overflow: 'hidden', background: 'var(--card)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
+              <div style={{ ...s.th, width: '8%' }}>#</div>
+              <div style={{ ...s.th, width: '27%' }}>Nom complet</div>
+              <div style={{ ...s.th, width: '15%' }}>Téléphone</div>
+              <div style={{ ...s.th, width: '17%' }}>Date naissance</div>
+              <div style={{ ...s.th, width: '23%' }}>Adresse</div>
+              <div style={{ ...s.th, width: '10%', textAlign: 'right' }}></div>
+            </div>
+            <List
+              style={{ height: Math.min(filtered.length * ROW_HEIGHT, 600) }}
+              rowCount={filtered.length}
+              rowHeight={ROW_HEIGHT}
+            >
+              {PatientRow}
+            </List>
           </div>
         )}
       </div>
@@ -129,32 +131,24 @@ function PatientDetailView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isMobile = useIsMobile()
-
-  const [patient, setPatient] = useState(null)
-  const [rdvs, setRdvs] = useState([])
-  const [visites, setVisites] = useState([])
-  const [ordonnances, setOrdonnances] = useState([])
-  const [factures, setFactures] = useState([])
-  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('rdv')
 
-  useEffect(() => {
-    Promise.all([
-      api.get('/patients'),
-      api.get('/rendez-vous'),
-      api.get(`/patient/${id}/visites`),
-      api.get(`/patient/${id}/ordonnances`),
-      api.get(`/patients/${id}/history`).catch(() => ({ data: { factures: [] } })),
-    ]).then(([pRes, rRes, vRes, oRes, hRes]) => {
-      const p = pRes.data.find(x => String(x.id) === String(id))
-      setPatient(p || null)
-      setRdvs(rRes.data.filter(r => r.patient?.id === parseInt(id)).sort((a, b) => b.date?.localeCompare(a.date)))
-      setVisites(vRes.data)
-      setOrdonnances(oRes.data)
-      setFactures(hRes.data.factures || [])
-    }).catch(() => {})
-    .finally(() => setLoading(false))
-  }, [id])
+  const { data: patients = [] } = useApiQuery('patients', '/patients')
+  const { data: allRdvs = [] } = useApiQuery('rdv', '/rendez-vous')
+  const { data: visites = [], isLoading: visitesLoading } = useApiQuery(
+    ['patient-visites', id], `/patient/${id}/visites`, { enabled: !!id }
+  )
+  const { data: ordonnances = [], isLoading: ordsLoading } = useApiQuery(
+    ['patient-ordonnances', id], `/patient/${id}/ordonnances`, { enabled: !!id }
+  )
+  const { data: historyData } = useApiQuery(
+    ['patient-history', id], `/patients/${id}/history`, { enabled: !!id }
+  )
+
+  const loading = visitesLoading || ordsLoading
+  const patient = patients.find(x => String(x.id) === String(id)) || null
+  const rdvs = allRdvs.filter(r => r.patient?.id === parseInt(id)).sort((a, b) => b.date?.localeCompare(a.date))
+  const factures = historyData?.factures || []
 
   if (loading) return (
     <Layout>

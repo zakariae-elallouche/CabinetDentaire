@@ -128,7 +128,7 @@ class VisiteController extends Controller
         $visites = Visite::with(['facture', 'operations', 'ordonnance.medicaments.medicament', 'dentiste'])
             ->where('patient_id', $id)
             ->orderByDesc('date_visite')
-            ->get();
+            ->paginate(25);
 
         return response()->json($visites);
     }
@@ -145,7 +145,7 @@ class VisiteController extends Controller
             ->where('dentiste_id', $dentisteId)
             ->whereDate('date_visite', today())
             ->orderBy('created_at')
-            ->get();
+            ->paginate(25);
 
         return response()->json($visites);
     }

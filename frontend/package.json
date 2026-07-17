@@ -11,14 +11,17 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",
+    "@tanstack/react-query": "^5.101.2",
     "axios": "^1.15.2",
     "jspdf": "^4.2.1",
     "laravel-echo": "^2.3.7",
     "pusher-js": "^8.5.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-loading-skeleton": "^3.5.0",
     "react-router-dom": "^7.14.2",
     "react-toastify": "^11.1.0",
+    "react-window": "^2.2.7",
     "recharts": "^3.9.1"
   },
   "devDependencies": {
@@ -30,6 +33,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^8.0.10"
   }
 }

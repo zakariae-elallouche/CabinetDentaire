@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import EmptyState from '../../components/EmptyState'
-import api from '../../api'
 import { useIsMobile } from '../../hooks/useIsMobile'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -28,20 +28,21 @@ const IcoCheck   = () => <svg viewBox="0 0 24 24" width="13" height="13" fill="n
 
 function ManagePayments() {
   const isMobile = useIsMobile()
-  const [factures, setFactures] = useState([])
-  const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
   const [tab, setTab]           = useState('attente') // 'attente' | 'payees'
   const [payModal, setPayModal] = useState(null)
   const [methode, setMethode]   = useState('especes')
   const [paying, setPaying]     = useState(false)
 
-  useEffect(() => {
-    api.get('/factures')
-      .then(r => setFactures(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const { data: factures = [], isLoading } = useApiQuery('factures', '/factures')
+
+  const payMutation = useApiMutation('post', 'factures', {
+    onSuccess: () => {
+      toast.success('Paiement enregistré')
+      setPayModal(null)
+    },
+    onError: () => toast.error('Erreur lors du paiement'),
+  })
 
   const openPay = (f) => { setPayModal(f); setMethode('especes') }
 
@@ -49,15 +50,9 @@ function ManagePayments() {
     if (!payModal) return
     setPaying(true)
     try {
-      await api.post(`/factures/${payModal.id}/payment`, {
-        montant_recu: payModal.montant_total,
-        methode_paiement: methode,
-      })
+      await payMutation.mutateAsync({ _config: { url: `/factures/${payModal.id}/payment`, method: 'post' }, montant_recu: payModal.montant_total, methode_paiement: methode })
       setFactures(prev => prev.map(f => f.id === payModal.id ? { ...f, statut: 'payee' } : f))
-      toast.success('Paiement enregistré')
-      setPayModal(null)
-    } catch { toast.error('Erreur lors du paiement') }
-    finally { setPaying(false) }
+    } finally { setPaying(false) }
   }
 
   const pName = (f) => f.patient ? `${f.patient.prenom} ${f.patient.nom}` : '—'
@@ -70,7 +65,7 @@ function ManagePayments() {
   const displayList = (tab === 'attente' ? enAttente : payees)
     .filter(f => !q || pName(f).toLowerCase().includes(q))
 
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>

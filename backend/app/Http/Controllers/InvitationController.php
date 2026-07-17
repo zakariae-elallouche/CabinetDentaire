@@ -14,15 +14,11 @@ class InvitationController extends Controller
     {
         $members = Utilisateur::where('tenant_id', tenant_id())
             ->whereIn('role', ['dentiste', 'secretaire'])
+            ->with(['dentiste', 'secretaire'])
             ->orderByDesc('created_at')
-            ->get()
-            ->map(function ($u) {
-                $profile = null;
-                if ($u->role === 'dentiste') {
-                    $profile = Dentiste::where('utilisateur_id', $u->id)->first();
-                } elseif ($u->role === 'secretaire') {
-                    $profile = Secretaire::where('utilisateur_id', $u->id)->first();
-                }
+            ->paginate(25)
+            ->through(function ($u) {
+                $profile = $u->dentiste ?? $u->secretaire;
                 return [
                     'id'            => $u->id,
                     'email'         => $u->email,

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import Layout from '../../components/Layout'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -21,37 +21,29 @@ function BookAppointment() {
   const [selectedSlot, setSelectedSlot] = useState(null)
   const [raison, setRaison] = useState('')
   const [loading, setLoading] = useState(false)
-  const [freeSlots, setFreeSlots] = useState([])
-  const [loadingSlots, setLoadingSlots] = useState(false)
-  const [horaires, setHoraires] = useState(null)
-  const [fraisVisite, setFraisVisite] = useState(null)
 
-  // Fetch horaires + frais_visite once on mount
   useEffect(() => {
-    const todayStr = toLocalDateStr(new Date())
-    api.get(`/rendez-vous/available-slots?date=${todayStr}`)
-      .then(res => {
-        setHoraires(res.data.horaires)
-        setFraisVisite(res.data.frais_visite)
-      })
-      .catch(() => {})
-  }, [])
-
-  // Fetch available slots when selected date changes
-  useEffect(() => {
-    if (!selectedDate) return
     setSelectedSlot(null)
-    const dateStr = toLocalDateStr(selectedDate)
-    setLoadingSlots(true)
-    api.get(`/rendez-vous/available-slots?date=${dateStr}`)
-      .then(res => {
-        setHoraires(res.data.horaires || horaires)
-        setFraisVisite(res.data.frais_visite)
-        setFreeSlots(res.data.slots || [])
-      })
-      .catch(() => setFreeSlots([]))
-      .finally(() => setLoadingSlots(false))
   }, [selectedDate])
+
+  const dateStr = toLocalDateStr(selectedDate)
+
+  const { data: slotsData, isLoading: loadingSlots } = useApiQuery(
+    ['available-slots', dateStr],
+    '/rendez-vous/available-slots',
+    { params: { date: dateStr } }
+  )
+
+  const freeSlots = slotsData?.slots || []
+  const horaires = slotsData?.horaires
+  const fraisVisite = slotsData?.frais_visite
+
+  const bookMutation = useApiMutation('post', '/rendez-vous', {
+    onSuccess: () => {
+      toast.success('Rendez-vous soumis — En attente de confirmation')
+      navigate('/patient/rendez-vous')
+    },
+  })
 
   // ─── Vérifier si un jour est actif dans les horaires ───
   const isDayActive = (date) => {
@@ -103,21 +95,11 @@ function BookAppointment() {
 
   const handleSubmit = async () => {
     if (!selectedSlot) { toast.warning('Choisissez un créneau'); return }
+    setLoading(true)
     try {
-      setLoading(true)
-      const dateStr = toLocalDateStr(selectedDate)
-      await api.post('/rendez-vous', {
-        date: dateStr,
-        heure: selectedSlot,
-        raison,
-      })
-      toast.success('Rendez-vous soumis — En attente de confirmation')
-      navigate('/patient/rendez-vous')
-    } catch {
-      // global interceptor handles toast
-    } finally {
-      setLoading(false)
-    }
+      await bookMutation.mutateAsync({ date: dateStr, heure: selectedSlot, raison })
+    } catch { /* interceptor handles */ }
+    setLoading(false)
   }
 
   const days = getDays()

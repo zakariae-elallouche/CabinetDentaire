@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import api from '../../api'
+import { useApiQuery } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
@@ -76,7 +76,27 @@ function PatientDashboard() {
   const [nextRdv, setNextRdv]   = useState(null)
   const [stats, setStats]       = useState({ rdvAVenir: 0, factures: 0, ordonnances: 0, visites: 0 })
   const [recentRdv, setRecentRdv] = useState([])
-  const [loading, setLoading]   = useState(true)
+
+  const { data: rdvs = [], isLoading } = useApiQuery('patient-rdv', '/rendez-vous')
+
+  useEffect(() => {
+    const now = new Date()
+    const todayStr = now.toISOString().slice(0, 10)
+    const nowTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+    const upcoming = rdvs
+      .filter(r => {
+        if (r.statut !== 'CONFIRMÉ' && r.statut !== 'EN_ATTENTE') return false
+        if (r.date > todayStr) return true
+        if (r.date === todayStr) return (r.heure || '99:99') >= nowTime
+        return false
+      })
+      .sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')))
+    const confirmed = rdvs.filter(r => r.statut === 'CONFIRMÉ')
+
+    setNextRdv(upcoming[0] || null)
+    setRecentRdv(rdvs.slice(0, 3))
+    setStats(prev => ({ ...prev, rdvAVenir: confirmed.length }))
+  }, [rdvs])
 
   const greeting = (() => {
     const h = new Date().getHours()
@@ -87,38 +107,7 @@ function PatientDashboard() {
 
   const firstName = user?.prenom || user?.nom || 'Patient'
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const rdvRes = await api.get('/rendez-vous')
-        const rdvs = rdvRes.data || []
-
-        const now = new Date()
-        const todayStr = now.toISOString().slice(0, 10)
-        const nowTime = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
-        const upcoming = rdvs
-          .filter(r => {
-            if (r.statut !== 'CONFIRMÉ' && r.statut !== 'EN_ATTENTE') return false
-            if (r.date > todayStr) return true
-            if (r.date === todayStr) return (r.heure || '99:99') >= nowTime
-            return false
-          })
-          .sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')))
-        const confirmed = rdvs.filter(r => r.statut === 'CONFIRMÉ')
-
-        setNextRdv(upcoming[0] || null)
-        setRecentRdv(rdvs.slice(0, 3))
-        setStats(prev => ({ ...prev, rdvAVenir: confirmed.length }))
-      } catch (e) {
-        // silent — API may not be wired yet
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
-
-  if (loading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
+  if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
