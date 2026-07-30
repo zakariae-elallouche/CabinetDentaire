@@ -60,7 +60,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await api.post('/login', { email, password });
-    const { token: newToken, user: userData, tenant_branding, tenant_statut } = res.data;
+    const { token: newToken, user: userData, profile, tenant_branding, tenant_statut } = res.data;
 
     localStorage.setItem('token', newToken);
     setToken(newToken);
@@ -75,16 +75,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('tenantStatut', tenant_statut);
     }
 
-    let mergedUser = { ...userData };
-    try {
-      const profileRes = await api.get('/me');
-      mergedUser = buildNomComplet({ ...userData, ...profileRes.data.profile });
-      if (profileRes.data.tenant_statut) {
-        setTenantStatut(profileRes.data.tenant_statut);
-        localStorage.setItem('tenantStatut', profileRes.data.tenant_statut);
-      }
-    } catch { mergedUser = buildNomComplet(mergedUser) }
-
+    const mergedUser = buildNomComplet({ ...userData, ...profile });
     setUser(mergedUser);
     localStorage.setItem('user', JSON.stringify(mergedUser));
 

@@ -32,10 +32,13 @@ class AuthController extends Controller
         $abilities = $user->tenant_id ? ["tenant:{$user->tenant_id}"] : [];
         $token = $user->createToken('auth_token', $abilities)->plainTextToken;
 
+        $profile = $this->loadProfile($user);
         $tenantStatut = null;
+        $branding = null;
         if ($user->tenant_id) {
             $tenant = Tenant::find($user->tenant_id);
             $tenantStatut = $tenant?->statut;
+            $branding = $tenant?->only(['nom_clinique']);
         }
 
         return response()->json([
@@ -47,9 +50,43 @@ class AuthController extends Controller
                 'nom'   => $user->nom,
                 'prenom'=> $user->prenom,
             ],
-            'tenant_branding' => $this->getBranding($user->tenant_id),
+            'profile' => $profile,
+            'tenant_branding' => $branding,
             'tenant_statut' => $tenantStatut,
         ]);
+    }
+
+    private function loadProfile($user): array
+    {
+        return match($user->role) {
+            'patient' => (function () use ($user) {
+                $p = Patient::where('utilisateur_id', $user->id)->firstOrFail();
+                $p->nom = $user->nom;
+                $p->prenom = $user->prenom;
+                $p->telephone = $user->telephone ?? $p->telephone;
+                return $p->toArray();
+            })(),
+            'dentiste' => (function () use ($user) {
+                $d = Dentiste::where('utilisateur_id', $user->id)->firstOrFail();
+                $d->nom = $user->nom;
+                $d->prenom = $user->prenom;
+                $d->telephone = $user->telephone;
+                return $d->toArray();
+            })(),
+            'secretaire' => (function () use ($user) {
+                $s = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
+                $s->nom = $user->nom;
+                $s->prenom = $user->prenom;
+                $s->telephone = $user->telephone;
+                return $s->toArray();
+            })(),
+            'admin_clinique' => array_merge(
+                Tenant::find($user->tenant_id)?->only(['nom_clinique', 'slug', 'email_contact', 'ville', 'statut']) ?? [],
+                ['nom' => $user->nom, 'prenom' => $user->prenom, 'telephone' => $user->telephone]
+            ),
+            'superadmin'     => ['email' => $user->email, 'role' => strtoupper($user->role), 'nom' => $user->nom, 'prenom' => $user->prenom],
+            default          => abort(403),
+        };
     }
 
     private function getBranding(?int $tenantId): ?array
@@ -145,23 +182,26 @@ class AuthController extends Controller
                 $p = Patient::where('utilisateur_id', $user->id)->firstOrFail();
                 $p->nom = $user->nom;
                 $p->prenom = $user->prenom;
+                $p->telephone = $user->telephone ?? $p->telephone;
                 return $p;
             })(),
             'dentiste' => (function () use ($user) {
                 $d = Dentiste::where('utilisateur_id', $user->id)->firstOrFail();
                 $d->nom = $user->nom;
                 $d->prenom = $user->prenom;
+                $d->telephone = $user->telephone;
                 return $d;
             })(),
             'secretaire' => (function () use ($user) {
                 $s = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
                 $s->nom = $user->nom;
                 $s->prenom = $user->prenom;
+                $s->telephone = $user->telephone;
                 return $s;
             })(),
             'admin_clinique' => array_merge(
-                Tenant::find($user->tenant_id)?->only(['nom_clinique', 'slug', 'email_contact', 'telephone', 'ville', 'statut']) ?? [],
-                ['nom' => $user->nom, 'prenom' => $user->prenom]
+                Tenant::find($user->tenant_id)?->only(['nom_clinique', 'slug', 'email_contact', 'ville', 'statut']) ?? [],
+                ['nom' => $user->nom, 'prenom' => $user->prenom, 'telephone' => $user->telephone]
             ),
             'superadmin'     => ['email' => $user->email, 'role' => strtoupper($user->role), 'nom' => $user->nom, 'prenom' => $user->prenom],
             default          => abort(403),
@@ -191,37 +231,46 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        $user->update($request->only(['nom', 'prenom', 'telephone']));
+
         if ($user->role === 'patient') {
-            $user->update($request->only(['nom', 'prenom']));
             $patient = Patient::where('utilisateur_id', $user->id)->firstOrFail();
             $patient->update($request->only([
-                'telephone', 'adresse',
-                'date_naissance', 'sexe', 'contact_urgence', 'notes_generales',
+                'adresse', 'date_naissance', 'sexe', 'contact_urgence', 'notes_generales',
             ]));
-            return response()->json(['profile' => $patient->fresh()]);
+            if ($request->has('telephone')) {
+                $patient->update(['telephone' => $request->telephone]);
+            }
+            $profile = $patient->fresh();
+            $profile->telephone = $user->fresh()->telephone;
+            return response()->json(['profile' => $profile]);
         }
 
         if ($user->role === 'dentiste') {
-            $user->update($request->only(['nom', 'prenom']));
             $dentiste = Dentiste::where('utilisateur_id', $user->id)->firstOrFail();
-            $dentiste->update($request->only(['telephone', 'specialite']));
-            return response()->json(['profile' => $dentiste->fresh()]);
+            $dentiste->update($request->only(['specialite']));
+            $profile = $dentiste->fresh();
+            $profile->telephone = $user->fresh()->telephone;
+            return response()->json(['profile' => $profile]);
         }
 
         if ($user->role === 'secretaire') {
-            $user->update($request->only(['nom', 'prenom']));
-            $sec = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
-            $sec->update($request->only(['telephone']));
-            return response()->json(['profile' => $sec->fresh()]);
+            $profile = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
+            $profile = $profile->fresh();
+            $profile->telephone = $user->fresh()->telephone;
+            return response()->json(['profile' => $profile]);
         }
 
         if ($user->role === 'admin_clinique') {
-            $user->update($request->only(['nom', 'prenom']));
             $tenant = Tenant::findOrFail($user->tenant_id);
-            $tenant->update($request->only(['nom_clinique', 'email_contact', 'telephone', 'adresse', 'ville']));
+            $tenant->update($request->only(['nom_clinique', 'email_contact', 'adresse', 'ville']));
+            if ($request->has('telephone')) {
+                $tenant->update(['telephone' => $request->telephone]);
+            }
+            $fresh = $user->fresh();
             return response()->json(['profile' => array_merge(
-                $tenant->fresh()->only(['nom_clinique', 'slug', 'email_contact', 'telephone', 'ville', 'statut']),
-                ['nom' => $user->fresh()->nom, 'prenom' => $user->fresh()->prenom]
+                $tenant->fresh()->only(['nom_clinique', 'slug', 'email_contact', 'ville', 'statut']),
+                ['nom' => $fresh->nom, 'prenom' => $fresh->prenom, 'telephone' => $fresh->telephone]
             )]);
         }
 

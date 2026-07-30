@@ -47,7 +47,7 @@ function MyPrescriptions() {
         </div>
 
         <AnimateIn>
-            {error ? (
+            {isError ? (
               <EmptyState title="Impossible de charger les ordonnances" sub="Vérifiez votre connexion et réessayez." />
             ) : prescriptions.length === 0 ? (
               <EmptyState title="Aucune ordonnance" sub="Aucune ordonnance délivrée pour le moment." />

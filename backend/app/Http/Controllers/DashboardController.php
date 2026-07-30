@@ -26,7 +26,7 @@ class DashboardController extends Controller
 
         $cacheKey = 'dashboard.' . ($base ?? 'global');
 
-        $data = Cache::remember($cacheKey, 300, function () use ($base, $role) {
+        $data = Cache::remember($cacheKey, 900, function () use ($base, $role) {
             $result = [
                 'patients_count'   => Patient::when($base, fn($q) => $q->where('tenant_id', $base))->count(),
                 'dentistes_count'  => Dentiste::when($base, fn($q) => $q->where('tenant_id', $base))->count(),

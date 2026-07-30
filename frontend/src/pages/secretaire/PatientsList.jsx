@@ -111,11 +111,11 @@ function PatientsListView() {
             </div>
             <List
               style={{ height: Math.min(filtered.length * ROW_HEIGHT, 600) }}
+              rowComponent={PatientRow}
               rowCount={filtered.length}
               rowHeight={ROW_HEIGHT}
-            >
-              {PatientRow}
-            </List>
+              rowProps={{}}
+            />
           </div>
         )}
       </div>

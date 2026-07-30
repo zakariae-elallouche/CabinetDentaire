@@ -2,200 +2,222 @@ import { useState, useEffect } from 'react'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { useIsMobile } from '../../hooks/useIsMobile'
-import { toast } from 'react-toastify'
 import { useApiQuery, useApiMutation } from '../../hooks/useApi'
 import DonutLoader from '../../components/DonutLoader'
 import AnimateIn from '../../components/AnimateIn'
 
 function MonCompte() {
-  const { user, updateUser } = useAuth()
+  const { user } = useAuth()
   const isMobile = useIsMobile()
-  const [profile, setProfile] = useState(null)
-  const [pwForm, setPwForm] = useState({ ancien: '', nouveau: '' })
-  const [saving, setSaving] = useState(false)
-  const [savingTel, setSavingTel] = useState(false)
-  const [editingTel, setEditingTel] = useState(false)
-  const [telephone, setTelephone] = useState('')
-  const [telDraft, setTelDraft] = useState('')
+  const [profile, setProfile] = useState({
+    nom: '', prenom: '', telephone: '', email: '',
+    specialite: '', nom_clinique: '',
+  })
+  const [passwords, setPasswords] = useState({ ancien: '', nouveau: '' })
+  const [toast, setToast] = useState(null)
 
-  const [editingNomClinique, setEditingNomClinique] = useState(false)
-  const [nomClinique, setNomClinique] = useState('')
-  const [nomCliniqueDraft, setNomCliniqueDraft] = useState('')
+  const showToast = (type, msg) => {
+    setToast({ type, msg })
+    setTimeout(() => setToast(null), 3000)
+  }
 
-  const [editingNom, setEditingNom] = useState(false)
-  const [nom, setNom] = useState('')
-  const [nomDraft, setNomDraft] = useState('')
-
-  const [editingPrenom, setEditingPrenom] = useState(false)
-  const [prenom, setPrenom] = useState('')
-  const [prenomDraft, setPrenomDraft] = useState('')
   const { data: meData, isLoading } = useApiQuery('me', '/me')
 
   useEffect(() => {
     if (!meData?.profile) return
     const p = meData.profile
-    setProfile(p)
-    setTelephone(p.telephone || ''); setTelDraft(p.telephone || '')
-    setNomClinique(p.nom_clinique || ''); setNomCliniqueDraft(p.nom_clinique || '')
-    setNom(p.nom || ''); setNomDraft(p.nom || '')
-    setPrenom(p.prenom || ''); setPrenomDraft(p.prenom || '')
-  }, [meData])
+    setProfile({
+      nom: p.nom || '', prenom: p.prenom || '', telephone: p.telephone || '',
+      email: p.email || user?.email || '', specialite: p.specialite || '',
+      nom_clinique: p.nom_clinique || '',
+    })
+  }, [meData, user])
 
-  const changePasswordMutation = useApiMutation('put', '/password', {
-    onSuccess: () => { toast.success('Mot de passe modifié'); setPwForm({ ancien: '', nouveau: '' }) },
-    onError: (err) => toast.error(err?.response?.data?.errors?.ancien?.[0] || err?.response?.data?.message || 'Erreur'),
-  })
+  const handleChange = e => setProfile({ ...profile, [e.target.name]: e.target.value })
 
-  const updateProfileMutation = useApiMutation('put', '/me', {
+  const saveProfileMutation = useApiMutation('put', '/me', {
     onSuccess: (res) => {
-      setProfile(res.data.profile)
-      if (res.data.profile?.telephone !== undefined) { setTelephone(res.data.profile.telephone); setTelDraft(res.data.profile.telephone) }
-      if (res.data.profile?.nom !== undefined) { setNom(res.data.profile.nom); setNomDraft(res.data.profile.nom) }
-      if (res.data.profile?.prenom !== undefined) { setPrenom(res.data.profile.prenom); setPrenomDraft(res.data.profile.prenom) }
-      if (res.data.profile?.nom_clinique !== undefined) { setNomClinique(res.data.profile.nom_clinique); setNomCliniqueDraft(res.data.profile.nom_clinique) }
+      const p = res.data.profile
+      setProfile(prev => ({ ...prev, ...p }))
+      showToast('ok', 'Profil mis à jour avec succès.')
     },
-    onError: (err) => toast.error(err?.response?.data?.message || 'Erreur'),
+    onError: () => showToast('err', 'Erreur lors de la mise à jour.'),
     invalidate: 'me',
   })
 
-  const changePw = async (e) => {
+  const changePasswordMutation = useApiMutation('put', '/password', {
+    onSuccess: () => { showToast('ok', 'Mot de passe modifié.'); setPasswords({ ancien: '', nouveau: '' }) },
+    onError: () => showToast('err', 'Ancien mot de passe incorrect.'),
+  })
+
+  const handleSave = (e) => { e.preventDefault(); saveProfileMutation.mutate(profile) }
+
+  const handlePasswordChange = (e) => {
     e.preventDefault()
-    setSaving(true)
-    try { await changePasswordMutation.mutateAsync(pwForm) }
-    catch { /* handled */ }
-    setSaving(false)
+    if (!passwords.ancien || !passwords.nouveau) {
+      showToast('err', 'Remplissez les deux champs.')
+      return
+    }
+    changePasswordMutation.mutate(passwords)
   }
 
-  const cancelEdit = () => { setTelDraft(telephone); setEditingTel(false) }
-
-  const saveTelephone = async () => {
-    setSavingTel(true)
-    try {
-      await updateProfileMutation.mutateAsync({ telephone: telDraft })
-      setEditingTel(false)
-      toast.success('Téléphone mis à jour')
-    } catch { /* handled */ }
-    setSavingTel(false)
-  }
-
-  const saveField = async (field, value, setEditing, setValue, setDraft) => {
-    setSavingTel(true)
-    try {
-      await updateProfileMutation.mutateAsync({ [field]: value })
-      setValue(value); setDraft(value); setEditing(false)
-      toast.success('Mis à jour')
-    } catch { /* handled */ }
-    setSavingTel(false)
-  }
-
-  const cols = profile ? Object.entries(profile).filter(([k]) => !['id', 'tenant_id', 'utilisateur_id', 'utilisateur', 'created_at', 'updated_at', 'numero_employe', 'statut', 'slug', 'plan', 'ville', 'adresse', 'email_contact', 'date_naissance', 'sexe', 'contact_urgence', 'notes_generales'].includes(k)) : []
-  const isAdmin = user?.role === 'ADMIN_CLINIQUE'
+  const initials = ((profile.prenom || '')[0] || '') + ((profile.nom || '')[0] || '')
+  const roleLabel = user?.role === 'SECRETAIRE' ? 'Secrétaire'
+    : user?.role === 'DENTISTE' ? 'Dentiste'
+    : user?.role === 'ADMIN_CLINIQUE' ? 'Administrateur'
+    : user?.role || ''
 
   if (isLoading) return <Layout><div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}><DonutLoader /></div></Layout>
 
   return (
     <Layout>
-      <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 26, color: 'var(--ink)', margin: '0 0 24px' }}>
-        Mon <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>compte</em>
-      </h1>
+      <h1 style={s.title}>Mon <em style={{ fontStyle: 'italic', color: 'var(--accent)' }}>compte</em></h1>
+      <p style={s.subtitle}>Gérez vos informations personnelles et professionnelles.</p>
 
       <AnimateIn>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 24, maxWidth: isMobile ? '100%' : 800 }}>
-        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: 24 }}>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 18, color: 'var(--ink)', margin: '0 0 16px' }}>Informations</h2>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {cols.filter(([k]) => !['nom', 'prenom'].includes(k) && (!isAdmin || !['telephone', 'nom_clinique'].includes(k))).map(([key, val]) => (
-              <div key={key}>
-                <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 2, fontWeight: 500 }}>
-                  {key === 'nom' ? 'Nom' : key === 'prenom' ? 'Prénom' : key === 'telephone' ? 'Téléphone' : key === 'specialite' ? 'Spécialité' : key === 'email' ? 'Email' : key}
-                </div>
-                <div style={{ fontSize: 14, color: 'var(--ink)' }}>{val || '—'}</div>
+        <>
+        {toast && (
+        <div style={{ ...s.toast, background: toast.type === 'ok' ? 'var(--success-soft)' : 'var(--rose-soft)', color: toast.type === 'ok' ? 'var(--success)' : 'var(--rose)', border: `1px solid ${toast.type === 'ok' ? '#a3c9b4' : '#e4b4b4'}` }}>
+          {toast.msg}
+        </div>
+      )}
+
+      <div style={{ ...s.grid, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+
+        {/* ── Left: personal info ── */}
+        <div style={s.card}>
+          <div style={s.avatarRow}>
+            <div style={s.avatar}>{initials.toUpperCase() || '?'}</div>
+            <div>
+              <strong style={{ fontSize: 15, color: 'var(--ink)' }}>
+                {profile.prenom} {profile.nom}
+              </strong>
+              <div style={{ color: 'var(--ink-3)', fontSize: 12, marginTop: 2 }}>
+                {profile.email} · {roleLabel}
               </div>
-            ))}
-            <EditableField label="Nom" value={nom} draft={nomDraft} setDraft={setNomDraft}
-              editing={editingNom} setEditing={setEditingNom} saving={savingTel}
-              onSave={() => saveField('nom', nomDraft, setEditingNom, setNom, setNomDraft)}
-              onCancel={() => { setNomDraft(nom); setEditingNom(false) }} />
-            <EditableField label="Prénom" value={prenom} draft={prenomDraft} setDraft={setPrenomDraft}
-              editing={editingPrenom} setEditing={setEditingPrenom} saving={savingTel}
-              onSave={() => saveField('prenom', prenomDraft, setEditingPrenom, setPrenom, setPrenomDraft)}
-              onCancel={() => { setPrenomDraft(prenom); setEditingPrenom(false) }} />
-            {isAdmin && (
-              <>
-                <EditableField label="Nom de la clinique" value={nomClinique} draft={nomCliniqueDraft} setDraft={setNomCliniqueDraft}
-                  editing={editingNomClinique} setEditing={setEditingNomClinique} saving={savingTel}
-                  onSave={() => saveField('nom_clinique', nomCliniqueDraft, setEditingNomClinique, setNomClinique, setNomCliniqueDraft)}
-                  onCancel={() => { setNomCliniqueDraft(nomClinique); setEditingNomClinique(false) }} />
-                <EditableField label="Téléphone" value={telephone} draft={telDraft} setDraft={setTelDraft}
-                  editing={editingTel} setEditing={setEditingTel} saving={savingTel}
-                  onSave={saveTelephone}
-                  onCancel={cancelEdit} />
-              </>
-            )}
+            </div>
+          </div>
+
+          <form autoComplete="off" onSubmit={handleSave}>
+          <div style={s.sectionHead}>Informations personnelles</div>
+
+          <div style={{ ...s.row, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            <Field label="Prénom" name="prenom" value={profile.prenom} onChange={handleChange} autoComplete="given-name" />
+            <Field label="Nom" name="nom" value={profile.nom} onChange={handleChange} autoComplete="family-name" />
+          </div>
+          <Field label="Téléphone" name="telephone" value={profile.telephone} onChange={handleChange} autoComplete="tel" />
+
+          {user?.role === 'DENTISTE' && (
+            <Field label="Spécialité" name="specialite" value={profile.specialite} onChange={handleChange} autoComplete="organization-title" />
+          )}
+
+          {user?.role === 'ADMIN_CLINIQUE' && (
+            <Field label="Nom de la clinique" name="nom_clinique" value={profile.nom_clinique} onChange={handleChange} autoComplete="off" />
+          )}
+
+          <button type="submit" style={s.btnPrimary}>Enregistrer</button>
+          </form>
+        </div>
+
+        {/* ── Right: password ── */}
+        <div>
+          <div style={s.card}>
+            <form onSubmit={handlePasswordChange} autoComplete="off">
+            <div style={s.sectionHead}>Changer le mot de passe</div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={s.label}>Ancien mot de passe</label>
+              <input style={s.input} type="password" placeholder="••••••••" autoComplete="current-password"
+                value={passwords.ancien}
+                onChange={e => setPasswords({ ...passwords, ancien: e.target.value })} />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={s.label}>Nouveau mot de passe</label>
+              <input style={s.input} type="password" placeholder="••••••••" autoComplete="new-password"
+                value={passwords.nouveau}
+                onChange={e => setPasswords({ ...passwords, nouveau: e.target.value })} />
+            </div>
+            <button type="submit" style={s.btnGhost}>Modifier</button>
+            </form>
           </div>
         </div>
 
-        <div style={{ background: 'var(--card)', borderRadius: 14, border: '1px solid var(--line)', padding: 24 }}>
-          <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 18, color: 'var(--ink)', margin: '0 0 16px' }}>Mot de passe</h2>
-          <form onSubmit={changePw}>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 6, fontWeight: 500 }}>Mot de passe actuel</label>
-              <input type="password" value={pwForm.ancien} onChange={e => setPwForm(f => ({...f, ancien: e.target.value}))} required style={inputStyle} />
-            </div>
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 6, fontWeight: 500 }}>Nouveau mot de passe</label>
-              <input type="password" value={pwForm.nouveau} onChange={e => setPwForm(f => ({...f, nouveau: e.target.value}))} required minLength={6} style={inputStyle} />
-            </div>
-            <button type="submit" disabled={saving} style={{
-              width: '100%', padding: '12px', background: 'var(--accent)', color: '#fff', border: 'none',
-              borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
-            }}>
-              {saving ? 'Enregistrement...' : 'Changer le mot de passe'}
-            </button>
-          </form>
-        </div>
       </div>
-      </AnimateIn>
+      </>
+        </AnimateIn>
     </Layout>
   )
 }
 
-const inputStyle = {
-  width: '100%', padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 10,
-  fontSize: 14, background: 'var(--surface)', color: 'var(--ink)', outline: 'none',
-  boxSizing: 'border-box', fontFamily: 'inherit',
-}
-
-const iconBtnStyle = {
-  width: 34, height: 34, borderRadius: 8, border: '1px solid var(--line)',
-  background: 'var(--surface)', cursor: 'pointer', display: 'grid', placeItems: 'center',
-  flexShrink: 0, fontFamily: 'inherit', fontSize: 13,
-}
-
-function EditableField({ label, value, draft, setDraft, editing, setEditing, saving, onSave, onCancel }) {
+function Field({ label, name, value, onChange, type = 'text', placeholder, autoComplete }) {
   return (
-    <div>
-      <div style={{ fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 2, fontWeight: 500 }}>{label}</div>
-      {editing ? (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input value={draft} onChange={e => setDraft(e.target.value)} style={inputStyle} placeholder={label} autoFocus />
-          <button onClick={onSave} disabled={saving} title="Confirmer" style={{ ...iconBtnStyle, background: 'var(--accent)', color: '#fff' }}>
-            {saving ? '...' : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>}
-          </button>
-          <button onClick={onCancel} disabled={saving} title="Annuler" style={iconBtnStyle}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5l14 14M19 5l-14 14"/></svg>
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 14, color: 'var(--ink)' }}>{value || '—'}</span>
-          <button onClick={() => { setDraft(value); setEditing(true) }} title="Modifier" style={{ ...iconBtnStyle, width: 28, height: 28 }}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-        </div>
-      )}
+    <div style={{ marginBottom: '1rem' }}>
+      <label style={s.label}>{label}</label>
+      <input style={s.input} type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} autoComplete={autoComplete} />
     </div>
   )
+}
+
+const s = {
+  title: {
+    fontFamily: '"Inter", serif', fontWeight: 400,
+    fontSize: 36, letterSpacing: '-0.02em',
+    margin: '0 0 6px', color: 'var(--ink)',
+  },
+  subtitle: { color: 'var(--ink-2)', fontSize: 14, margin: '0 0 24px' },
+  toast: {
+    padding: '10px 16px', borderRadius: 8,
+    fontSize: 13, marginBottom: 20,
+  },
+  grid: {
+    display: 'grid', gridTemplateColumns: '1fr 1fr',
+    gap: 20, alignItems: 'start',
+  },
+  card: {
+    background: 'var(--card)', border: '1px solid var(--line)',
+    borderRadius: 'var(--radius)', padding: 22,
+  },
+  avatarRow: {
+    display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22,
+  },
+  avatar: {
+    width: 52, height: 52, borderRadius: '50%',
+    background: 'linear-gradient(135deg, var(--accent-soft), var(--accent))',
+    display: 'grid', placeItems: 'center',
+    color: '#fff', fontWeight: 600, fontSize: 18, flexShrink: 0,
+  },
+  sectionHead: {
+    fontFamily: '"Inter", serif', fontWeight: 500,
+    fontSize: 15, color: 'var(--accent)',
+    margin: '0 0 16px', paddingBottom: 8,
+    borderBottom: '1px solid var(--line)',
+  },
+  row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
+  label: {
+    display: 'block', fontSize: 11.5, letterSpacing: '0.08em',
+    textTransform: 'uppercase', color: 'var(--ink-3)', marginBottom: 6,
+  },
+  input: {
+    width: '100%', padding: '10px 12px',
+    border: '1px solid var(--line)', borderRadius: 8,
+    fontSize: 13.5, outline: 'none',
+    background: 'var(--surface)', boxSizing: 'border-box',
+    fontFamily: 'inherit', color: 'var(--ink)',
+  },
+  btnPrimary: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '10px 18px', borderRadius: 10,
+    fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+    background: 'var(--accent)', color: '#fff', border: 'none',
+    marginTop: 4,
+  },
+  btnGhost: {
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    padding: '10px 18px', borderRadius: 10,
+    fontSize: 13.5, fontWeight: 500, cursor: 'pointer',
+    background: 'transparent', color: 'var(--ink)',
+    border: '1px solid var(--line-strong)',
+    marginTop: 4,
+  },
 }
 
 export default MonCompte

@@ -41,9 +41,10 @@ function MyProfile() {
     onError: () => showToast('err', 'Ancien mot de passe incorrect.'),
   })
 
-  const handleSave = () => saveProfileMutation.mutate(profile)
+  const handleSave = (e) => { e.preventDefault(); saveProfileMutation.mutate(profile) }
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = (e) => {
+    e.preventDefault()
     if (!passwords.ancien || !passwords.nouveau) {
       showToast('err', 'Remplissez les deux champs.')
       return
@@ -84,16 +85,17 @@ function MyProfile() {
             </div>
           </div>
 
+          <form autoComplete="off" onSubmit={handleSave}>
           <div style={s.sectionHead}>Informations personnelles</div>
 
           <div style={{ ...s.row, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
-            <Field label="Prénom" name="prenom" value={profile.prenom} onChange={handleChange} />
-            <Field label="Nom" name="nom" value={profile.nom} onChange={handleChange} />
+            <Field label="Prénom" name="prenom" value={profile.prenom} onChange={handleChange} autoComplete="given-name" />
+            <Field label="Nom" name="nom" value={profile.nom} onChange={handleChange} autoComplete="family-name" />
           </div>
-          <Field label="Téléphone" name="telephone" value={profile.telephone} onChange={handleChange} />
-          <Field label="Adresse" name="adresse" value={profile.adresse} onChange={handleChange} />
+          <Field label="Téléphone" name="telephone" value={profile.telephone} onChange={handleChange} autoComplete="tel" />
+          <Field label="Adresse" name="adresse" value={profile.adresse} onChange={handleChange} autoComplete="street-address" />
           <div style={{ ...s.row, gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
-            <Field label="Date de naissance" name="date_naissance" type="date" value={profile.date_naissance} onChange={handleChange} />
+            <Field label="Date de naissance" name="date_naissance" type="date" value={profile.date_naissance} onChange={handleChange} autoComplete="bday" />
             <div style={{ marginBottom: '1rem' }}>
               <label style={s.label}>Sexe</label>
               <select style={s.input} name="sexe" value={profile.sexe || ''} onChange={handleChange}>
@@ -104,12 +106,14 @@ function MyProfile() {
             </div>
           </div>
 
-          <button style={s.btnPrimary} onClick={handleSave}>Enregistrer</button>
+          <button type="submit" style={s.btnPrimary}>Enregistrer</button>
+          </form>
         </div>
 
         {/* ── Right: medical + password ── */}
         <div>
           <div style={s.card}>
+            <form autoComplete="off" onSubmit={handleSave}>
             <div style={s.sectionHead}>Informations médicales</div>
             <Field
               label="Notes médicales / Antécédents"
@@ -118,6 +122,7 @@ function MyProfile() {
               onChange={handleChange}
               textarea
               placeholder="Diabète, hypertension, allergies…"
+              autoComplete="off"
             />
             <Field
               label="Contact d'urgence"
@@ -125,25 +130,29 @@ function MyProfile() {
               value={profile.contact_urgence}
               onChange={handleChange}
               placeholder="Nom — Téléphone"
+              autoComplete="off"
             />
-            <button style={s.btnPrimary} onClick={handleSave}>Enregistrer</button>
+            <button type="submit" style={s.btnPrimary}>Enregistrer</button>
+            </form>
           </div>
 
           <div style={{ ...s.card, marginTop: 16 }}>
+            <form onSubmit={handlePasswordChange} autoComplete="off">
             <div style={s.sectionHead}>Changer le mot de passe</div>
             <div style={{ marginBottom: '1rem' }}>
               <label style={s.label}>Ancien mot de passe</label>
-              <input style={s.input} type="password" placeholder="••••••••"
+              <input style={s.input} type="password" placeholder="••••••••" autoComplete="current-password"
                 value={passwords.ancien}
                 onChange={e => setPasswords({ ...passwords, ancien: e.target.value })} />
             </div>
             <div style={{ marginBottom: '1rem' }}>
               <label style={s.label}>Nouveau mot de passe</label>
-              <input style={s.input} type="password" placeholder="••••••••"
+              <input style={s.input} type="password" placeholder="••••••••" autoComplete="new-password"
                 value={passwords.nouveau}
                 onChange={e => setPasswords({ ...passwords, nouveau: e.target.value })} />
             </div>
-            <button style={s.btnGhost} onClick={handlePasswordChange}>Modifier</button>
+            <button type="submit" style={s.btnGhost}>Modifier</button>
+            </form>
           </div>
         </div>
 
@@ -154,7 +163,7 @@ function MyProfile() {
   )
 }
 
-function Field({ label, name, value, onChange, type = 'text', textarea, placeholder }) {
+function Field({ label, name, value, onChange, type = 'text', textarea, placeholder, autoComplete }) {
   const s2 = {
     marginBottom: '1rem',
   }
@@ -173,8 +182,8 @@ function Field({ label, name, value, onChange, type = 'text', textarea, placehol
         {label}
       </label>
       {textarea
-        ? <textarea style={inputStyle} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} />
-        : <input style={inputStyle} type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} />
+        ? <textarea style={inputStyle} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} autoComplete={autoComplete} />
+        : <input style={inputStyle} type={type} name={name} value={value || ''} onChange={onChange} placeholder={placeholder} autoComplete={autoComplete} />
       }
     </div>
   )

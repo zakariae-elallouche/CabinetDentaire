@@ -164,7 +164,7 @@ class RendezVousController extends Controller
 
         $cacheKey = 'available_slots.' . $date . '.' . ($dentisteId ?? 'all');
 
-        $result = Cache::remember($cacheKey, 30, function () use ($request, $date, $dentisteId) {
+        $result = Cache::remember($cacheKey, 300, function () use ($request, $date, $dentisteId) {
             if (!$dentisteId) {
                 return ['date' => $date, 'slots' => [], 'horaires' => [], 'frais_visite' => 0];
             }

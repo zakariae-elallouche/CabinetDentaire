@@ -253,7 +253,7 @@ function MyInvoices() {
         </div>
 
         <AnimateIn>
-            {error ? (
+            {isError ? (
               <EmptyState title="Impossible de charger les factures" sub="Vérifiez votre connexion et réessayez." />
             ) : invoices.length === 0 ? (
               <EmptyState title="Aucune facture" sub="Vos factures apparaîtront ici après chaque visite." />

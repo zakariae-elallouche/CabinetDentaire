@@ -219,7 +219,7 @@ function MyVisits() {
 
         {/* Liste */}
         <AnimateIn>
-            {error ? (
+            {isError ? (
               <EmptyState title="Impossible de charger les visites" sub="Vérifiez votre connexion et réessayez." />
             ) : filtered.length === 0 ? (
               <EmptyState title="Aucune visite" sub="Aucune visite enregistrée pour le moment." />

@@ -168,10 +168,10 @@ function Login() {
 
         <p style={{ textAlign: 'center', fontSize: '14px', color: '#6a6a6a', margin: '24px 0 0' }}>
           Vous êtes un cabinet ?{' '}
-          <Link to="/register-clinic" style={{ color: P, textDecoration: 'none', fontWeight: 500 }}
+          <a href="https://dentaspace-6x.netlify.app/register-clinic" style={{ color: P, textDecoration: 'none', fontWeight: 500 }}
             onMouseEnter={e => e.target.style.color = P_HOVER}
             onMouseLeave={e => e.target.style.color = P}
-          >Demander un essai</Link>
+          >Demander un essai</a>
         </p>
     </>
   )
