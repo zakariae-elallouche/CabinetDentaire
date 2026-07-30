@@ -58,35 +58,40 @@ class AuthController extends Controller
 
     private function loadProfile($user): array
     {
-        return match($user->role) {
-            'patient' => (function () use ($user) {
-                $p = Patient::where('utilisateur_id', $user->id)->firstOrFail();
-                $p->nom = $user->nom;
-                $p->prenom = $user->prenom;
-                $p->telephone = $user->telephone ?? $p->telephone;
-                return $p->toArray();
-            })(),
-            'dentiste' => (function () use ($user) {
-                $d = Dentiste::where('utilisateur_id', $user->id)->firstOrFail();
-                $d->nom = $user->nom;
-                $d->prenom = $user->prenom;
-                $d->telephone = $user->telephone;
-                return $d->toArray();
-            })(),
-            'secretaire' => (function () use ($user) {
-                $s = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
-                $s->nom = $user->nom;
-                $s->prenom = $user->prenom;
-                $s->telephone = $user->telephone;
-                return $s->toArray();
-            })(),
-            'admin_clinique' => array_merge(
-                Tenant::find($user->tenant_id)?->only(['nom_clinique', 'slug', 'email_contact', 'ville', 'statut']) ?? [],
-                ['nom' => $user->nom, 'prenom' => $user->prenom, 'telephone' => $user->telephone]
-            ),
-            'superadmin'     => ['email' => $user->email, 'role' => strtoupper($user->role), 'nom' => $user->nom, 'prenom' => $user->prenom],
-            default          => abort(403),
-        };
+        $role = strtolower($user->role);
+        try {
+            return match($role) {
+                'patient' => (function () use ($user) {
+                    $p = Patient::where('utilisateur_id', $user->id)->firstOrFail();
+                    $p->nom = $user->nom;
+                    $p->prenom = $user->prenom;
+                    $p->telephone = $user->telephone ?? $p->telephone;
+                    return $p->toArray();
+                })(),
+                'dentiste' => (function () use ($user) {
+                    $d = Dentiste::where('utilisateur_id', $user->id)->firstOrFail();
+                    $d->nom = $user->nom;
+                    $d->prenom = $user->prenom;
+                    $d->telephone = $user->telephone;
+                    return $d->toArray();
+                })(),
+                'secretaire' => (function () use ($user) {
+                    $s = Secretaire::where('utilisateur_id', $user->id)->firstOrFail();
+                    $s->nom = $user->nom;
+                    $s->prenom = $user->prenom;
+                    $s->telephone = $user->telephone;
+                    return $s->toArray();
+                })(),
+                'admin_clinique' => array_merge(
+                    Tenant::find($user->tenant_id)?->only(['nom_clinique', 'slug', 'email_contact', 'ville', 'statut']) ?? [],
+                    ['nom' => $user->nom, 'prenom' => $user->prenom, 'telephone' => $user->telephone]
+                ),
+                'superadmin'     => ['email' => $user->email, 'role' => strtoupper($user->role), 'nom' => $user->nom, 'prenom' => $user->prenom],
+                default          => ['role' => strtoupper($role)],
+            };
+        } catch (\Exception $e) {
+            return ['role' => strtoupper($role)];
+        }
     }
 
     private function getBranding(?int $tenantId): ?array
