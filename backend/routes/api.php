@@ -19,6 +19,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PasswordResetController;
 
 // Routes publiques (pas de token requis) — limitées pour la sécurité
+Route::get('/health', fn() => response()->json(['status' => 'ok', 'time' => now()->toIso8601String()]));
 Route::post('/login',              [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/register',            [AuthController::class, 'register'])->middleware('throttle:10,1');
 Route::post('/register-clinic',     [ClinicRegistrationController::class, 'register'])->middleware('throttle:10,1');
